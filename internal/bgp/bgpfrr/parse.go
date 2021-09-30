@@ -1,4 +1,4 @@
-package frr
+package bgpfrr
 
 import (
 	"encoding/json"
@@ -10,10 +10,12 @@ import (
 )
 
 type Neighbor struct {
-	ip        net.IP
-	connected bool
-	localAS   string
-	remoteAS  string
+	Ip          net.IP
+	Connected   bool
+	LocalAS     string
+	RemoteAS    string
+	UpdatesSent int
+	PfxSnt      int
 }
 
 type Route struct {
@@ -24,10 +26,16 @@ type Route struct {
 const bgpConnected = "Established"
 
 type FRRNeighbor struct {
-	RemoteAs   int    `json:"remoteAs"`
-	LocalAs    int    `json:"localAs"`
-	BgpVersion int    `json:"bgpVersion"`
-	BgpState   string `json:"bgpState"`
+	RemoteAs     int    `json:"remoteAs"`
+	LocalAs      int    `json:"localAs"`
+	BgpVersion   int    `json:"bgpVersion"`
+	BgpState     string `json:"bgpState"`
+	MessageStats struct {
+		UpdatesSent int `json:"updatesSent"`
+	} `json:"messageStats"`
+	AddressFamilyInfo map[string]struct {
+		SentPrefixCounter int `json:"sentPrefixCounter"`
+	} `json:"addressFamilyInfo"`
 }
 
 type IPInfo struct {
@@ -44,7 +52,7 @@ type FRRRoute struct {
 
 // parseNeighbour takes the result of a show bgp neighbor x.y.w.z
 // and parses the informations related to the neighbour.
-func parseNeighbour(vtyshRes string) (*Neighbor, error) {
+func ParseNeighbour(vtyshRes string) (*Neighbor, error) {
 	res := map[string]FRRNeighbor{}
 	err := json.Unmarshal([]byte(vtyshRes), &res)
 	if err != nil {
@@ -65,11 +73,17 @@ func parseNeighbour(vtyshRes string) (*Neighbor, error) {
 		if n.BgpState != bgpConnected {
 			connected = false
 		}
+		pfxSnt := 0
+		for _, s := range n.AddressFamilyInfo {
+			pfxSnt += s.SentPrefixCounter
+		}
 		return &Neighbor{
-			ip:        ip,
-			connected: connected,
-			localAS:   strconv.Itoa(n.LocalAs),
-			remoteAS:  strconv.Itoa(n.RemoteAs),
+			Ip:          ip,
+			Connected:   connected,
+			LocalAS:     strconv.Itoa(n.LocalAs),
+			RemoteAS:    strconv.Itoa(n.RemoteAs),
+			UpdatesSent: n.MessageStats.UpdatesSent,
+			PfxSnt:      pfxSnt,
 		}, nil
 	}
 	return nil, errors.New("no peers were returned")
@@ -77,7 +91,7 @@ func parseNeighbour(vtyshRes string) (*Neighbor, error) {
 
 // parseNeighbour takes the result of a show bgp neighbor
 // and parses the informations related to all the neighbours.
-func parseNeighbours(vtyshRes string) ([]*Neighbor, error) {
+func ParseNeighbours(vtyshRes string) ([]*Neighbor, error) {
 	toParse := map[string]FRRNeighbor{}
 	err := json.Unmarshal([]byte(vtyshRes), &toParse)
 	if err != nil {
@@ -94,11 +108,17 @@ func parseNeighbours(vtyshRes string) ([]*Neighbor, error) {
 		if n.BgpState != bgpConnected {
 			connected = false
 		}
+		pfxSnt := 0
+		for _, s := range n.AddressFamilyInfo {
+			pfxSnt += s.SentPrefixCounter
+		}
 		res = append(res, &Neighbor{
-			ip:        ip,
-			connected: connected,
-			localAS:   strconv.Itoa(n.LocalAs),
-			remoteAS:  strconv.Itoa(n.RemoteAs),
+			Ip:          ip,
+			Connected:   connected,
+			LocalAS:     strconv.Itoa(n.LocalAs),
+			RemoteAS:    strconv.Itoa(n.RemoteAs),
+			UpdatesSent: n.MessageStats.UpdatesSent,
+			PfxSnt:      pfxSnt,
 		})
 	}
 	return res, nil
@@ -106,7 +126,7 @@ func parseNeighbours(vtyshRes string) ([]*Neighbor, error) {
 
 // parseRoute takes the result of a show bgp neighbor
 // and parses the informations related to all the neighbours.
-func parseRoutes(vtyshRes string) (map[string]Route, error) {
+func ParseRoutes(vtyshRes string) (map[string]Route, error) {
 	toParse := IPInfo{}
 	err := json.Unmarshal([]byte(vtyshRes), &toParse)
 	if err != nil {
