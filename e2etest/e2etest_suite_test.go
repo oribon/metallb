@@ -54,6 +54,7 @@ var (
 	containersNetwork = defaultContainersNetwork
 	hostIPv4          string
 	hostIPv6          string
+	useOperator       bool
 )
 
 // handleFlags sets up all flags and parses the command line.
@@ -65,6 +66,7 @@ func handleFlags() {
 	flag.BoolVar(&skipDockerCmd, "skip-docker", false, "et this to true if the BGP daemon is running on the host instead of in a container")
 	flag.StringVar(&ipv4ServiceRange, "ipv4-service-range", "0", "a range of IPv4 addresses for MetalLB to use when running in layer2 mode")
 	flag.StringVar(&ipv6ServiceRange, "ipv6-service-range", "0", "a range of IPv6 addresses for MetalLB to use when running in layer2 mode")
+	flag.BoolVar(&useOperator, "use-operator", false, "set this to true to run the tests using operator custom resources")
 	flag.Parse()
 }
 
@@ -143,5 +145,5 @@ var _ = ginkgo.AfterSuite(func() {
 	framework.ExpectNoError(err)
 
 	err = cs.CoreV1().ConfigMaps(testNameSpace).Delete(context.TODO(), "config", metav1.DeleteOptions{})
-	framework.ExpectNoError(err)
+	framework.ExpectNoError(err) // Fails in operator mode until Fede's PR, for now: "configmaps \"config\" not found" sometimes (race condition)
 })

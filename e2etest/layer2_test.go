@@ -42,11 +42,20 @@ import (
 var _ = ginkgo.Describe("L2", func() {
 	f := framework.NewDefaultFramework("l2")
 	var loadBalancerCreateTimeout time.Duration
+	var uc UpdateCleaner
 	var cs clientset.Interface
+	var err error
 
 	ginkgo.BeforeEach(func() {
 		cs = f.ClientSet
 		loadBalancerCreateTimeout = e2eservice.GetServiceLoadBalancerCreationTimeout(cs)
+		uc = newConfigMap(cs, testNameSpace)
+		if useOperator {
+			clientconfig := f.ClientConfig()
+			uc, err = newOperator(clientconfig, testNameSpace)
+			framework.ExpectNoError(err)
+		}
+
 		configData := configFile{
 			Pools: []addressPool{
 				{
@@ -59,13 +68,13 @@ var _ = ginkgo.Describe("L2", func() {
 				},
 			},
 		}
-		err := updateConfigMap(cs, configData)
+		err := uc.Update(configData)
 		framework.ExpectNoError(err)
 	})
 
 	ginkgo.AfterEach(func() {
 		// Clean previous configuration.
-		err := updateConfigMap(cs, configFile{})
+		err := uc.Clean()
 		framework.ExpectNoError(err)
 
 		if ginkgo.CurrentGinkgoTestDescription().Failed {
@@ -146,7 +155,7 @@ var _ = ginkgo.Describe("L2", func() {
 			configData := configFile{
 				Pools: getAddressPools(),
 			}
-			err := updateConfigMap(cs, configData)
+			err := uc.Update(configData)
 			framework.ExpectNoError(err)
 
 			svc, _ := createServiceWithBackend(cs, f.Namespace.Name, corev1.ServiceExternalTrafficPolicyTypeCluster)

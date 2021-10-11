@@ -2,16 +2,6 @@
 
 package e2e
 
-import (
-	"context"
-
-	"github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clientset "k8s.io/client-go/kubernetes"
-)
-
 // Proto holds the protocol we are speaking.
 type Proto string
 
@@ -65,24 +55,4 @@ type bgpAdvertisement struct {
 	AggregationLength *int     `yaml:"aggregation-length,omitempty"`
 	LocalPref         *uint32  `yaml:"localpref,omitempty"`
 	Communities       []string `yaml:"communities,omitempty"`
-}
-
-func updateConfigMap(cs clientset.Interface, data configFile) error {
-	resData, err := yaml.Marshal(data)
-	if err != nil {
-		return errors.Wrapf(err, "Failed to marshal MetalLB ConfigMap data")
-	}
-
-	_, err = cs.CoreV1().ConfigMaps(testNameSpace).Update(context.TODO(), &v1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "config",
-			Namespace: testNameSpace,
-		},
-		Data: map[string]string{"config": string(resData)},
-	}, metav1.UpdateOptions{})
-	if err != nil {
-		return errors.Wrapf(err, "Failed to update MetalLB ConfigMap")
-	}
-
-	return nil
 }

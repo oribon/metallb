@@ -63,6 +63,7 @@ type containerConfig struct {
 
 var _ = ginkgo.Describe("BGP", func() {
 	f := framework.NewDefaultFramework("bgp")
+	var uc UpdateCleaner
 	var cs clientset.Interface
 	containersConf := []containerConfig{
 		{
@@ -101,14 +102,22 @@ var _ = ginkgo.Describe("BGP", func() {
 				framework.Fail("Invalid hostIPv4")
 			}
 		}
+
 		cs = f.ClientSet
+		uc = newConfigMap(cs, testNameSpace)
+		if useOperator {
+			clientconfig := f.ClientConfig()
+			uc, err = newOperator(clientconfig, testNameSpace)
+			framework.ExpectNoError(err)
+		}
+
 		frrContainers, err = createFRRContainers(containersConf)
 		framework.ExpectNoError(err)
 	})
 
 	ginkgo.AfterEach(func() {
 		// Clean previous configuration.
-		err := updateConfigMap(cs, configFile{})
+		err := uc.Clean()
 		framework.ExpectNoError(err)
 
 		err = stopFRRContainers(frrContainers)
@@ -151,7 +160,7 @@ var _ = ginkgo.Describe("BGP", func() {
 				pairExternalFRRWithNodes(cs, c)
 			}
 
-			err := updateConfigMap(cs, configData)
+			err := uc.Update(configData)
 			framework.ExpectNoError(err)
 
 			for _, c := range frrContainers {
@@ -259,7 +268,7 @@ var _ = ginkgo.Describe("BGP", func() {
 				pairExternalFRRWithNodes(cs, c)
 			}
 
-			err := updateConfigMap(cs, configData)
+			err := uc.Update(configData)
 			framework.ExpectNoError(err)
 
 			for _, c := range frrContainers {
@@ -315,7 +324,7 @@ var _ = ginkgo.Describe("BGP", func() {
 	ginkgo.Context("validate different AddressPools for type=Loadbalancer", func() {
 		ginkgo.AfterEach(func() {
 			// Clean previous configuration.
-			err := updateConfigMap(cs, configFile{})
+			err := uc.Clean()
 			framework.ExpectNoError(err)
 		})
 
@@ -340,7 +349,7 @@ var _ = ginkgo.Describe("BGP", func() {
 				pairExternalFRRWithNodes(cs, c)
 			}
 
-			err := updateConfigMap(cs, configData)
+			err := uc.Update(configData)
 			framework.ExpectNoError(err)
 
 			for _, c := range frrContainers {
