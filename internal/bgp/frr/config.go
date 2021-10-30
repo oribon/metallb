@@ -10,6 +10,9 @@ import (
 	"strconv"
 	"syscall"
 	"text/template"
+	"time"
+
+	"golang.org/x/sync/singleflight"
 )
 
 var configFileName = "/etc/frr_reloader/frr.conf"
@@ -114,35 +117,39 @@ func writeConfig(config string, filename string) error {
 
 // reloadConfig requests that FRR reloads the configuration file. This is
 // called after updating the configuration.
-var reloadConfig = func() error {
-	pidFile, found := os.LookupEnv("FRR_RELOADER_PID_FILE")
-	if found {
-		reloaderPidFileName = pidFile
-	}
+var reloadConfig = func(sf *singleflight.Group) error {
+	_, err, _ := sf.Do("reload",
+		func() (interface{}, error) {
+			time.Sleep(2 * time.Second)
+			pidFile, found := os.LookupEnv("FRR_RELOADER_PID_FILE")
+			if found {
+				reloaderPidFileName = pidFile
+			}
 
-	pid, err := os.ReadFile(reloaderPidFileName)
-	if err != nil {
-		return err
-	}
+			pid, err := os.ReadFile(reloaderPidFileName)
+			if err != nil {
+				return nil, err
+			}
 
-	pidInt, err := strconv.Atoi(string(pid))
-	if err != nil {
-		return err
-	}
+			pidInt, err := strconv.Atoi(string(pid))
+			if err != nil {
+				return nil, err
+			}
 
-	// send HUP signal to FRR reloader
-	err = syscall.Kill(pidInt, syscall.SIGHUP)
-	if err != nil {
-		return err
-	}
-
-	return nil
+			// send HUP signal to FRR reloader
+			err = syscall.Kill(pidInt, syscall.SIGHUP)
+			if err != nil {
+				return nil, err
+			}
+			return nil, nil
+		})
+	return err
 }
 
 // generateAndReloadConfigFile takes a 'struct frrConfig' and, using a template,
 // generates and writes a valid FRR configuration file. If this completes
 // successfully it will also force FRR to reload that configuration file.
-func generateAndReloadConfigFile(config *frrConfig) error {
+func generateAndReloadConfigFile(config *frrConfig, sf *singleflight.Group) error {
 	filename, found := os.LookupEnv("FRR_CONFIG_FILE")
 	if found {
 		configFileName = filename
@@ -158,7 +165,7 @@ func generateAndReloadConfigFile(config *frrConfig) error {
 		return err
 	}
 
-	err = reloadConfig()
+	err = reloadConfig(sf)
 	if err != nil {
 		return err
 	}

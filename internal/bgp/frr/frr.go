@@ -11,12 +11,14 @@ import (
 
 	"github.com/go-kit/kit/log"
 	"go.universe.tf/metallb/internal/bgp"
+	"golang.org/x/sync/singleflight"
 )
 
 // As the MetalLB controller should handle messages synchronously, there should
 // no need to lock this data structure. TODO: confirm this.
 type sessionManager struct {
-	sessions map[string]*session
+	sessions           map[string]*session
+	reloadSingleFlight *singleflight.Group
 }
 
 type session struct {
@@ -86,7 +88,7 @@ func (s *session) Set(advs ...*bgp.Advertisement) error {
 		return err
 	}
 
-	return generateAndReloadConfigFile(config)
+	return generateAndReloadConfigFile(config, s.sessionManager.reloadSingleFlight)
 }
 
 // Close() shuts down the BGP session.
@@ -101,7 +103,7 @@ func (s *session) Close() error {
 		return err
 	}
 
-	return generateAndReloadConfigFile(frrConfig)
+	return generateAndReloadConfigFile(frrConfig, s.sessionManager.reloadSingleFlight)
 }
 
 // NewSession() creates a BGP session using the given session parameters.
@@ -131,7 +133,7 @@ func (sm *sessionManager) NewSession(l log.Logger, addr string, srcAddr net.IP, 
 		return nil, err
 	}
 
-	err = generateAndReloadConfigFile(frrConfig)
+	err = generateAndReloadConfigFile(frrConfig, sm.reloadSingleFlight)
 	if err != nil {
 		_ = sm.deleteSession(s)
 		return nil, err
@@ -235,6 +237,7 @@ func (sm *sessionManager) createConfig() (*frrConfig, error) {
 
 func NewSessionManager() *sessionManager {
 	return &sessionManager{
-		sessions: map[string]*session{},
+		sessions:           map[string]*session{},
+		reloadSingleFlight: &singleflight.Group{},
 	}
 }

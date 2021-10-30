@@ -13,6 +13,7 @@ import (
 
 	"github.com/go-kit/kit/log"
 	"go.universe.tf/metallb/internal/bgp"
+	"golang.org/x/sync/singleflight"
 )
 
 const testData = "testdata/"
@@ -58,7 +59,7 @@ func testSetup(t *testing.T) {
 
 	os.Setenv("FRR_CONFIG_FILE", configFile)
 	// override reloadConfig so it doesn't try to reload it.
-	reloadConfig = func() error { return nil }
+	reloadConfig = func(sf *singleflight.Group) error { return nil }
 }
 
 func testCheckConfigFile(t *testing.T) {
