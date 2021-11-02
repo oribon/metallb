@@ -39,6 +39,7 @@ router bgp {{.MyASN}}
 {{range .Neighbors }}
   neighbor {{.Addr}} remote-as {{.ASN}}
   neighbor {{.Addr}} port {{.Port}}
+  neighbor {{.Addr}} timers connect 10
 {{- end }}
 {{range $n := .Neighbors -}}
 {{/* no bgp default ipv4-unicast prevents peering if no address families are defined. We declare an ipv4 one for the peer to make the pairing happen */}}
