@@ -34,6 +34,7 @@ type FRR struct {
 	RouterConfig   config.RouterConfig
 	Ipv4           string
 	Ipv6           string
+	RoutesPatched  bool
 }
 
 // Start creates a new FRR container on the host and returns the corresponding *FRR.

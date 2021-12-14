@@ -65,9 +65,11 @@ var (
 )
 
 type containerConfig struct {
-	name string
-	nc   frrconfig.NeighborConfig
-	rc   frrconfig.RouterConfig
+	name        string
+	network     string
+	patchroutes bool
+	nc          frrconfig.NeighborConfig
+	rc          frrconfig.RouterConfig
 }
 
 var _ = ginkgo.Describe("BGP", func() {
@@ -75,7 +77,8 @@ var _ = ginkgo.Describe("BGP", func() {
 	var cs clientset.Interface
 	var f *framework.Framework
 	ibgpContainerConfig := containerConfig{
-		name: frrIBGP,
+		name:    frrIBGP,
+		network: containersNetwork,
 		nc: frrconfig.NeighborConfig{
 			ASN:      MetalLBASN,
 			Password: "ibgp-test",
@@ -87,7 +90,9 @@ var _ = ginkgo.Describe("BGP", func() {
 		},
 	}
 	ebgpContainerConfig := containerConfig{
-		name: frrEBGP,
+		name:        frrEBGP,
+		network:     multiHopNetwork,
+		patchroutes: true,
 		nc: frrconfig.NeighborConfig{
 			ASN:      MetalLBASN,
 			Password: "ebgp-test",
@@ -140,6 +145,9 @@ var _ = ginkgo.Describe("BGP", func() {
 			frrContainers, err = createFRRContainers(ibgpContainerConfig)
 		} else {
 			frrContainers, err = createFRRContainers(ibgpContainerConfig, ebgpContainerConfig)
+			if multiHopContainer != nil {
+				frrContainers = append(frrContainers, multiHopContainer)
+			}
 		}
 		framework.ExpectNoError(err)
 		cs = f.ClientSet
@@ -1110,11 +1118,13 @@ func validateService(cs clientset.Interface, svc *corev1.Service, nodes []corev1
 		Eventually(func() error {
 			err := wgetRetry(address, c)
 			if err != nil {
+				fmt.Println(err)
 				return err
 			}
 
 			frrRoutesV4, frrRoutesV6, err := frr.Routes(c)
 			if err != nil {
+				fmt.Println(err)
 				return err
 			}
 			serviceIPFamily := "ipv4"
@@ -1124,18 +1134,23 @@ func validateService(cs clientset.Interface, svc *corev1.Service, nodes []corev1
 				serviceIPFamily = "ipv6"
 			}
 			if !ok {
+				fmt.Println(fmt.Errorf("%s not found in frr routes %v %v", ingressIP, frrRoutesV4, frrRoutesV6))
 				return fmt.Errorf("%s not found in frr routes %v %v", ingressIP, frrRoutesV4, frrRoutesV6)
 			}
 
 			err = frr.RoutesMatchNodes(nodes, frrRoutes, serviceIPFamily)
 			if err != nil {
+				fmt.Println(err)
 				return err
 			}
 
-			advertised := routes.ForIP(ingressIP, c)
-			err = routes.MatchNodes(nodes, advertised, serviceIPFamily)
-			if err != nil {
-				return err
+			if !c.RoutesPatched {
+				advertised := routes.ForIP(ingressIP, c)
+				err = routes.MatchNodes(nodes, advertised, serviceIPFamily)
+				if err != nil {
+					fmt.Println(err)
+					return err
+				}
 			}
 
 			return nil
@@ -1172,9 +1187,16 @@ func createFRRContainers(c ...containerConfig) ([]*frrcontainer.FRR, error) {
 	for _, conf := range c {
 		conf := conf
 		g.Go(func() error {
-			c, err := frrcontainer.Start(conf.name, conf.nc, conf.rc, containersNetwork, hostIPv4, hostIPv6)
+			c, err := frrcontainer.Start(conf.name, conf.nc, conf.rc, conf.network, hostIPv4, hostIPv6)
 			if c != nil {
 				frrContainers = append(frrContainers, c)
+			}
+			if err != nil {
+				return err
+			}
+			if conf.patchroutes {
+				err = addMultiHopRoutes(c, conf.network)
+				c.RoutesPatched = true
 			}
 			return err
 		})
@@ -1187,6 +1209,9 @@ func createFRRContainers(c ...containerConfig) ([]*frrcontainer.FRR, error) {
 func stopFRRContainers(containers []*frrcontainer.FRR) error {
 	g := new(errgroup.Group)
 	for _, c := range containers {
+		if c == multiHopContainer {
+			continue
+		}
 		c := c
 		g.Go(func() error {
 			err := c.Stop()
@@ -1199,7 +1224,6 @@ func stopFRRContainers(containers []*frrcontainer.FRR) error {
 
 func peersForContainers(containers []*frrcontainer.FRR, ipFamily string) []config.Peer {
 	var peers []config.Peer
-
 	for i, c := range containers {
 		addresses := c.AddressesForFamily(ipFamily)
 		holdTime := ""
@@ -1264,4 +1288,58 @@ func uint32Ptr(n uint32) *uint32 {
 
 func boolPtr(b bool) *bool {
 	return &b
+}
+
+// Adds the ...
+func addMultiHopRoutes(exec executor.Executor, execnet string) error {
+	localNetGW, ok := multiHopRoutes[execnet]
+	if !ok {
+		return fmt.Errorf("network %s not found in %v", execnet, multiHopRoutes)
+	}
+
+	ref := containersNetwork
+	if execnet == containersNetwork {
+		ref = multiHopNetwork
+	}
+
+	externalNet := multiHopRoutes[ref]
+
+	err := routes.Add(exec, fmt.Sprintf("%s/%d", externalNet.IPAddress, externalNet.IPPrefixLen), localNetGW.IPAddress)
+	if err != nil {
+		return err
+	}
+
+	err = routes.Add(exec, fmt.Sprintf("%s/%d", externalNet.GlobalIPv6Address, externalNet.GlobalIPv6PrefixLen), localNetGW.GlobalIPv6Address)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Deletes the ...
+func deleteMultiHopRoutes(exec executor.Executor, execnet string) error {
+	localNetGW, ok := multiHopRoutes[execnet]
+	if !ok {
+		return fmt.Errorf("network %s not found in %v", execnet, multiHopRoutes)
+	}
+
+	ref := containersNetwork
+	if execnet == containersNetwork {
+		ref = multiHopNetwork
+	}
+
+	externalNet := multiHopRoutes[ref]
+
+	err := routes.Delete(exec, fmt.Sprintf("%s/%d", externalNet.IPAddress, externalNet.IPPrefixLen), localNetGW.IPAddress)
+	if err != nil {
+		return err
+	}
+
+	err = routes.Delete(exec, fmt.Sprintf("%s/%d", externalNet.GlobalIPv6Address, externalNet.GlobalIPv6PrefixLen), localNetGW.GlobalIPv6Address)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

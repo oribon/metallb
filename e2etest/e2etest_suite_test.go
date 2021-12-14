@@ -30,6 +30,10 @@ import (
 	"github.com/onsi/ginkgo/config"
 	"github.com/onsi/ginkgo/reporters"
 	"github.com/onsi/gomega"
+	"go.universe.tf/metallb/e2etest/pkg/container"
+	"go.universe.tf/metallb/e2etest/pkg/executor"
+	frrconfig "go.universe.tf/metallb/e2etest/pkg/frr/config"
+	frrcontainer "go.universe.tf/metallb/e2etest/pkg/frr/container"
 	internalconfig "go.universe.tf/metallb/internal/config"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -44,6 +48,7 @@ const (
 	defaultTestNameSpace     = "metallb-system"
 	defaultContainersNetwork = "kind"
 	defaultConfigMapName     = "config"
+	multiHopNetwork          = "multi-hop-net"
 )
 
 var (
@@ -58,6 +63,8 @@ var (
 	hostIPv4          string
 	hostIPv6          string
 	useOperator       bool
+	multiHopContainer *frrcontainer.FRR
+	multiHopRoutes    map[string]container.NetworkSettings
 )
 
 // handleFlags sets up all flags and parses the command line.
@@ -156,6 +163,43 @@ var _ = ginkgo.BeforeSuite(func() {
 		},
 	}, metav1.CreateOptions{})
 	framework.ExpectNoError(err)
+
+	// Init external-hop network and "gw" container.
+	if containersNetwork != "host" {
+		out, err := executor.Host.Exec(executor.ContainerRuntime, "network", "create", multiHopNetwork, "--ipv6",
+			"--driver=bridge", "--subnet=172.30.0.0/16", "--subnet=fc00:f853:ccd:e798::/64")
+		framework.ExpectNoError(err, out)
+
+		multiHopGWContainer := containerConfig{
+			name:    "multi-hop-router",
+			network: containersNetwork,
+			nc: frrconfig.NeighborConfig{
+				ASN:      MetalLBASN,
+				Password: "ibgp-test",
+			},
+			rc: frrconfig.RouterConfig{
+				ASN:      ExternalASN,
+				BGPPort:  179,
+				Password: "ibgp-test",
+			},
+		}
+		multiHopContainer, err = frrcontainer.Start(multiHopGWContainer.name, multiHopGWContainer.nc, multiHopGWContainer.rc, multiHopGWContainer.network, hostIPv4, hostIPv6)
+		framework.ExpectNoError(err, out)
+
+		out, err = executor.Host.Exec(executor.ContainerRuntime, "network", "connect",
+			multiHopNetwork, multiHopGWContainer.name)
+		framework.ExpectNoError(err, out)
+
+		multiHopRoutes, err = container.Networks(multiHopGWContainer.name)
+		framework.ExpectNoError(err, out)
+
+		speakerPods := getSpeakerPods(cs)
+		for _, pod := range speakerPods {
+			nodeExec := executor.ForContainer(pod.Spec.NodeName)
+			err = addMultiHopRoutes(nodeExec, containersNetwork)
+			framework.ExpectNoError(err)
+		}
+	}
 })
 
 var _ = ginkgo.AfterSuite(func() {
@@ -164,4 +208,21 @@ var _ = ginkgo.AfterSuite(func() {
 
 	err = cs.CoreV1().ConfigMaps(testNameSpace).Delete(context.TODO(), configMapName, metav1.DeleteOptions{})
 	framework.ExpectNoError(err)
+
+	// Clean external-hop network and "gw" container.
+	if containersNetwork != "host" {
+		if multiHopContainer != nil {
+			_ = multiHopContainer.Stop()
+		}
+
+		out, err := executor.Host.Exec(executor.ContainerRuntime, "network", "rm", multiHopNetwork)
+		framework.ExpectNoError(err, out) // change to not exit here so the rest of the cleanup can continue
+
+		speakerPods := getSpeakerPods(cs)
+		for _, pod := range speakerPods {
+			nodeExec := executor.ForContainer(pod.Spec.NodeName)
+			err = deleteMultiHopRoutes(nodeExec, containersNetwork)
+			framework.ExpectNoError(err)
+		}
+	}
 })
