@@ -44,6 +44,7 @@ type ClusterResources struct {
 	Communities        []metallbv1beta1.Community        `json:"communities"`
 	PasswordSecrets    map[string]corev1.Secret          `json:"passwordsecrets"`
 	Nodes              []corev1.Node                     `json:"nodes"`
+	BGPExtras          corev1.ConfigMap                  `json:"bgpextras"`
 }
 
 // Config is a parsed MetalLB configuration.
@@ -54,6 +55,8 @@ type Config struct {
 	Pools map[string]*Pool
 	// BFD profiles that can be used by peers.
 	BFDProfiles map[string]*BFDProfile
+	// Protocol dependent extra config. Currently used only by FRR
+	BGPExtras string
 }
 
 // Proto holds the protocol we are speaking.
@@ -64,6 +67,8 @@ const (
 	BGP    Proto = "bgp"
 	Layer2 Proto = "layer2"
 )
+
+const bgpExtrasField = "extras"
 
 var Protocols = []Proto{
 	BGP, Layer2,
@@ -192,6 +197,11 @@ func For(resources ClusterResources, validate Validate) (*Config, error) {
 		return nil, err
 	}
 
+	cfg.BGPExtras = bgpExtrasFor(resources)
+	if err != nil {
+		return nil, err
+	}
+
 	return cfg, nil
 }
 
@@ -311,6 +321,13 @@ func poolsFor(resources ClusterResources) (map[string]*Pool, error) {
 	}
 
 	return res, nil
+}
+
+func bgpExtrasFor(resources ClusterResources) string {
+	if resources.BGPExtras.Data == nil {
+		return ""
+	}
+	return resources.BGPExtras.Data[bgpExtrasField]
 }
 
 func communitiesFromCrs(cs []metallbv1beta1.Community) (map[string]uint32, error) {

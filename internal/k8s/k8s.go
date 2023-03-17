@@ -141,6 +141,7 @@ func New(cfg *Config) (*Client, error) {
 				&metallbv1beta2.BGPPeer{}:          namespaceSelector,
 				&metallbv1beta1.Community{}:        namespaceSelector,
 				&corev1.Secret{}:                   namespaceSelector,
+				&corev1.ConfigMap{}:                namespaceSelector,
 			},
 		}),
 	})
