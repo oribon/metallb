@@ -50,7 +50,7 @@ type ClusterResources struct {
 // Config is a parsed MetalLB configuration.
 type Config struct {
 	// Routers that MetalLB should peer with.
-	Peers []*Peer
+	Peers map[string]*Peer
 	// Address pools from which to allocate load balancer IPs.
 	Pools *Pools
 	// BFD profiles that can be used by peers.
@@ -156,6 +156,8 @@ type ServiceAllocation struct {
 
 // BGPAdvertisement describes one translation from an IP address to a BGP advertisement.
 type BGPAdvertisement struct {
+	// The name of the advertisement
+	Name string
 	// Roll up the IP address into a CIDR prefix of this
 	// length. Optional, defaults to 32 (i.e. no aggregation) if not
 	// specified.
@@ -224,6 +226,10 @@ func For(resources ClusterResources, validate Validate) (*Config, error) {
 		return nil, err
 	}
 
+	err = validateConfig(cfg)
+	if err != nil {
+		return nil, err
+	}
 	return cfg, nil
 }
 
@@ -242,8 +248,8 @@ func bfdProfilesFor(resources ClusterResources) (map[string]*BFDProfile, error) 
 	return res, nil
 }
 
-func peersFor(resources ClusterResources, BFDProfiles map[string]*BFDProfile) ([]*Peer, error) {
-	var res []*Peer
+func peersFor(resources ClusterResources, BFDProfiles map[string]*BFDProfile) (map[string]*Peer, error) {
+	var res map[string]*Peer = make(map[string]*Peer)
 	for _, p := range resources.Peers {
 		peer, err := peerFromCR(p, resources.PasswordSecrets)
 		if err != nil {
@@ -262,7 +268,7 @@ func peersFor(resources ClusterResources, BFDProfiles map[string]*BFDProfile) ([
 				return nil, fmt.Errorf("peer %s already exists", p.Name)
 			}
 		}
-		res = append(res, peer)
+		res[peer.Name] = peer
 	}
 	return res, nil
 }
@@ -518,8 +524,22 @@ func addressPoolServiceAllocationsFromCR(p metallbv1beta1.IPAddressPool, namespa
 	if p.Spec.AllocateTo == nil {
 		return nil, nil
 	}
-	serviceAllocations := &ServiceAllocation{Priority: p.Spec.AllocateTo.Priority,
-		Namespaces: sets.New(p.Spec.AllocateTo.Namespaces...)}
+	poolNamespaces := sets.Set[string]{}
+	for _, poolNs := range p.Spec.AllocateTo.Namespaces {
+		if poolNamespaces.Has(poolNs) {
+			return nil, errors.New("duplicate definition in namespaces field")
+		}
+		poolNamespaces.Insert(poolNs)
+	}
+	err := validateLabelSelectorDuplicate(p.Spec.AllocateTo.NamespaceSelectors, "namespaceSelectors")
+	if err != nil {
+		return nil, err
+	}
+	err = validateLabelSelectorDuplicate(p.Spec.AllocateTo.ServiceSelectors, "serviceSelectors")
+	if err != nil {
+		return nil, err
+	}
+	serviceAllocations := &ServiceAllocation{Priority: p.Spec.AllocateTo.Priority, Namespaces: poolNamespaces}
 	for i := range p.Spec.AllocateTo.NamespaceSelectors {
 		l, err := metav1.LabelSelectorAsSelector(&p.Spec.AllocateTo.NamespaceSelectors[i])
 		if err != nil {
@@ -774,6 +794,7 @@ func bgpAdvertisementFromCR(crdAd metallbv1beta1.BGPAdvertisement, communities m
 	}
 
 	ad := &BGPAdvertisement{
+		Name:                crdAd.Name,
 		AggregationLength:   32,
 		AggregationLengthV6: 128,
 		LocalPref:           0,

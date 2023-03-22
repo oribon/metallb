@@ -56,6 +56,7 @@ func TestParse(t *testing.T) {
 			want: &Config{
 				Pools:       &Pools{ByName: map[string]*Pool{}},
 				BFDProfiles: map[string]*BFDProfile{},
+				Peers:       map[string]*Peer{},
 			},
 		},
 
@@ -217,8 +218,8 @@ func TestParse(t *testing.T) {
 				},
 			},
 			want: &Config{
-				Peers: []*Peer{
-					{
+				Peers: map[string]*Peer{
+					"peer1": {
 						Name:          "peer1",
 						MyASN:         42,
 						ASN:           142,
@@ -232,7 +233,7 @@ func TestParse(t *testing.T) {
 						EBGPMultiHop:  true,
 						VRF:           "foo",
 					},
-					{
+					"peer2": {
 						Name:          "peer2",
 						MyASN:         100,
 						ASN:           200,
@@ -251,6 +252,7 @@ func TestParse(t *testing.T) {
 						AutoAssign:    false,
 						BGPAdvertisements: []*BGPAdvertisement{
 							{
+								Name:                "adv1",
 								AggregationLength:   32,
 								AggregationLengthV6: 128,
 								LocalPref:           100,
@@ -261,6 +263,7 @@ func TestParse(t *testing.T) {
 								Peers: []string{"peer1"},
 							},
 							{
+								Name:                "adv2",
 								AggregationLength:   24,
 								AggregationLengthV6: 64,
 								Communities:         map[uint32]bool{},
@@ -278,6 +281,7 @@ func TestParse(t *testing.T) {
 						AutoAssign: true,
 						BGPAdvertisements: []*BGPAdvertisement{
 							{
+								Name:                "adv3",
 								AggregationLength:   32,
 								AggregationLengthV6: 128,
 								Communities:         map[uint32]bool{},
@@ -408,6 +412,71 @@ func TestParse(t *testing.T) {
 					ByNamespace: map[string][]string{"test-ns1": {"pool1"}, "test-ns2": {"pool2"}},
 				},
 				BFDProfiles: map[string]*BFDProfile{},
+				Peers:       map[string]*Peer{},
+			},
+		},
+
+		{
+			desc: "ip address pool with duplicate namespace selection",
+			crs: ClusterResources{
+				Pools: []v1beta1.IPAddressPool{
+					{
+						ObjectMeta: v1.ObjectMeta{
+							Name: "pool1",
+						},
+						Spec: v1beta1.IPAddressPoolSpec{
+							Addresses: []string{
+								"10.20.0.0/16",
+								"10.50.0.0/24",
+							},
+							AvoidBuggyIPs: true,
+							AutoAssign:    pointer.BoolPtr(false),
+							AllocateTo: &v1beta1.ServiceAllocation{Priority: 1,
+								Namespaces: []string{"test-ns1", "test-ns1"}},
+						},
+					},
+				},
+				Namespaces: []corev1.Namespace{
+					{
+						ObjectMeta: v1.ObjectMeta{
+							Name: "test-ns1",
+						},
+					},
+				},
+			},
+		},
+
+		{
+			desc: "ip address pool with duplicate namespace selectors",
+			crs: ClusterResources{
+				Pools: []v1beta1.IPAddressPool{
+					{
+						ObjectMeta: v1.ObjectMeta{
+							Name: "pool1",
+						},
+						Spec: v1beta1.IPAddressPoolSpec{
+							Addresses: []string{
+								"10.20.0.0/16",
+								"10.50.0.0/24",
+							},
+							AvoidBuggyIPs: true,
+							AutoAssign:    pointer.BoolPtr(false),
+							AllocateTo: &v1beta1.ServiceAllocation{
+								Priority: 1,
+								NamespaceSelectors: []v1.LabelSelector{{MatchLabels: map[string]string{"foo": "bar"}},
+									{MatchLabels: map[string]string{"foo": "bar"}}},
+							},
+						},
+					},
+				},
+				Namespaces: []corev1.Namespace{
+					{
+						ObjectMeta: v1.ObjectMeta{
+							Name:   "test-ns1",
+							Labels: map[string]string{"foo": "bar"},
+						},
+					},
+				},
 			},
 		},
 
@@ -458,6 +527,33 @@ func TestParse(t *testing.T) {
 				},
 					ByServiceSelector: []string{"pool1", "pool2"}},
 				BFDProfiles: map[string]*BFDProfile{},
+				Peers:       map[string]*Peer{},
+			},
+		},
+
+		{
+			desc: "ip address pool with duplicate service selection",
+			crs: ClusterResources{
+				Pools: []v1beta1.IPAddressPool{
+					{
+						ObjectMeta: v1.ObjectMeta{
+							Name: "pool1",
+						},
+						Spec: v1beta1.IPAddressPoolSpec{
+							Addresses: []string{
+								"30.0.0.0/8",
+							},
+							AllocateTo: &v1beta1.ServiceAllocation{Priority: 2,
+								ServiceSelectors: []v1.LabelSelector{{MatchExpressions: []metav1.LabelSelectorRequirement{
+									{
+										Key:      "foo",
+										Operator: metav1.LabelSelectorOpIn,
+										Values:   []string{"bar", "bar"},
+									},
+								}}}},
+						},
+					},
+				},
 			},
 		},
 
@@ -526,14 +622,19 @@ func TestParse(t *testing.T) {
 					ByNamespace:       map[string][]string{"test-ns1": {"pool1"}, "test-ns2": {"pool2"}},
 					ByServiceSelector: []string{"pool1", "pool2"}},
 				BFDProfiles: map[string]*BFDProfile{},
+				Peers:       map[string]*Peer{},
 			},
 		},
 
 		{
 			desc: "peer-only",
 			crs: ClusterResources{
+
 				Peers: []v1beta2.BGPPeer{
 					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "peer1",
+						},
 						Spec: v1beta2.BGPPeerSpec{
 							MyASN:   42,
 							ASN:     42,
@@ -543,8 +644,9 @@ func TestParse(t *testing.T) {
 				},
 			},
 			want: &Config{
-				Peers: []*Peer{
-					{
+				Peers: map[string]*Peer{
+					"peer1": {
+						Name:          "peer1",
 						MyASN:         42,
 						ASN:           42,
 						Addr:          net.ParseIP("1.2.3.4"),
@@ -650,6 +752,9 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				Peers: []v1beta2.BGPPeer{
 					{
+						ObjectMeta: v1.ObjectMeta{
+							Name: "peer1",
+						},
 						Spec: v1beta2.BGPPeerSpec{
 							MyASN:   42,
 							ASN:     42,
@@ -659,8 +764,9 @@ func TestParse(t *testing.T) {
 				},
 			},
 			want: &Config{
-				Peers: []*Peer{
-					{
+				Peers: map[string]*Peer{
+					"peer1": {
+						Name:          "peer1",
 						MyASN:         42,
 						ASN:           42,
 						Addr:          net.ParseIP("1.2.3.4"),
@@ -911,6 +1017,7 @@ func TestParse(t *testing.T) {
 						CIDR:       []*net.IPNet{ipnet("1.2.3.0/24")},
 						BGPAdvertisements: []*BGPAdvertisement{
 							{
+								Name:                "adv3",
 								AggregationLength:   32,
 								AggregationLengthV6: 128,
 								Communities:         map[uint32]bool{},
@@ -920,6 +1027,7 @@ func TestParse(t *testing.T) {
 					},
 				}},
 				BFDProfiles: map[string]*BFDProfile{},
+				Peers:       map[string]*Peer{},
 			},
 		},
 		{
@@ -951,6 +1059,7 @@ func TestParse(t *testing.T) {
 						CIDR:       []*net.IPNet{ipnet("1.2.3.0/24")},
 						BGPAdvertisements: []*BGPAdvertisement{
 							{
+								Name:                "adv3",
 								AggregationLength:   32,
 								AggregationLengthV6: 128,
 								Communities:         map[uint32]bool{},
@@ -960,6 +1069,7 @@ func TestParse(t *testing.T) {
 					},
 				}},
 				BFDProfiles: map[string]*BFDProfile{},
+				Peers:       map[string]*Peer{},
 			},
 		},
 		{
@@ -1059,6 +1169,7 @@ func TestParse(t *testing.T) {
 					},
 				}},
 				BFDProfiles: map[string]*BFDProfile{},
+				Peers:       map[string]*Peer{},
 			},
 		},
 		{
@@ -1400,6 +1511,9 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				Peers: []v1beta2.BGPPeer{
 					{
+						ObjectMeta: v1.ObjectMeta{
+							Name: "peer1",
+						},
 						Spec: v1beta2.BGPPeerSpec{
 							MyASN:      42,
 							ASN:        42,
@@ -1436,8 +1550,9 @@ func TestParse(t *testing.T) {
 				},
 			},
 			want: &Config{
-				Peers: []*Peer{
-					{
+				Peers: map[string]*Peer{
+					"peer1": {
+						Name:          "peer1",
 						MyASN:         42,
 						ASN:           42,
 						Addr:          net.ParseIP("1.2.3.4"),
@@ -1454,6 +1569,7 @@ func TestParse(t *testing.T) {
 						CIDR:       []*net.IPNet{ipnet("1.2.3.0/24")},
 						BGPAdvertisements: []*BGPAdvertisement{
 							{
+								Name:                "adv3",
 								AggregationLength:   32,
 								AggregationLengthV6: 128,
 								Communities:         map[uint32]bool{},
@@ -1529,6 +1645,9 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				Peers: []v1beta2.BGPPeer{
 					{
+						ObjectMeta: v1.ObjectMeta{
+							Name: "peer1",
+						},
 						Spec: v1beta2.BGPPeerSpec{
 							MyASN:   42,
 							ASN:     42,
@@ -1545,8 +1664,9 @@ func TestParse(t *testing.T) {
 				},
 			},
 			want: &Config{
-				Peers: []*Peer{
-					{
+				Peers: map[string]*Peer{
+					"peer1": {
+						Name:          "peer1",
 						MyASN:         42,
 						ASN:           42,
 						Addr:          net.ParseIP("1.2.3.4"),
@@ -1693,6 +1813,7 @@ func TestParse(t *testing.T) {
 						CIDR:       []*net.IPNet{ipnet("1.2.3.0/24")},
 						BGPAdvertisements: []*BGPAdvertisement{
 							{
+								Name:                "adv3",
 								AggregationLength:   32,
 								AggregationLengthV6: 128,
 								Communities:         map[uint32]bool{},
@@ -1713,6 +1834,7 @@ func TestParse(t *testing.T) {
 						PassiveMode:      true,
 					},
 				},
+				Peers: map[string]*Peer{},
 			},
 		},
 		{
@@ -1748,10 +1870,155 @@ func TestParse(t *testing.T) {
 			},
 		},
 		{
+			desc: "Session with ipv6 and bfd echo mode",
+			crs: ClusterResources{
+				Pools: []v1beta1.IPAddressPool{
+					{
+						ObjectMeta: v1.ObjectMeta{
+							Name: "pool1",
+						},
+						Spec: v1beta1.IPAddressPoolSpec{
+							Addresses: []string{
+								"fc00:f853:0ccd:e793::/64",
+							},
+						},
+					},
+				},
+				BFDProfiles: []v1beta1.BFDProfile{
+					{
+						ObjectMeta: v1.ObjectMeta{
+							Name: "nondefault",
+						},
+						Spec: v1beta1.BFDProfileSpec{
+							ReceiveInterval:  pointer.Uint32Ptr(50),
+							TransmitInterval: pointer.Uint32Ptr(51),
+							DetectMultiplier: pointer.Uint32Ptr(52),
+							EchoInterval:     pointer.Uint32Ptr(54),
+							EchoMode:         pointer.BoolPtr(true),
+							PassiveMode:      pointer.BoolPtr(true),
+							MinimumTTL:       pointer.Uint32Ptr(55),
+						},
+					},
+				},
+				BGPAdvs: []v1beta1.BGPAdvertisement{
+					{
+						ObjectMeta: v1.ObjectMeta{
+							Name: "adv3",
+						},
+					},
+				},
+				Peers: []v1beta2.BGPPeer{
+					{
+						ObjectMeta: v1.ObjectMeta{
+							Name: "peer1",
+						},
+						Spec: v1beta2.BGPPeerSpec{
+							MyASN:        42,
+							ASN:          142,
+							Address:      "1.2.3.4",
+							Port:         1179,
+							HoldTime:     v1.Duration{Duration: 180 * time.Second},
+							RouterID:     "10.20.30.40",
+							SrcAddress:   "10.20.30.40",
+							EBGPMultiHop: true,
+							BFDProfile:   "nondefault",
+						},
+					},
+				},
+			},
+		},
+		{
+			desc: "Session with ipv4 and bfd echo mode",
+			crs: ClusterResources{
+				Pools: []v1beta1.IPAddressPool{
+					{
+						ObjectMeta: v1.ObjectMeta{
+							Name: "pool1",
+						},
+						Spec: v1beta1.IPAddressPoolSpec{
+							Addresses: []string{
+								"1.2.3.0/24",
+							},
+						},
+					},
+				},
+				BFDProfiles: []v1beta1.BFDProfile{
+					{
+						ObjectMeta: v1.ObjectMeta{
+							Name: "with-echo",
+						},
+						Spec: v1beta1.BFDProfileSpec{
+							EchoMode: pointer.BoolPtr(true),
+						},
+					},
+				},
+				BGPAdvs: []v1beta1.BGPAdvertisement{
+					{
+						ObjectMeta: v1.ObjectMeta{
+							Name: "adv",
+						},
+					},
+				},
+				Peers: []v1beta2.BGPPeer{
+					{
+						ObjectMeta: v1.ObjectMeta{
+							Name: "peer1",
+						},
+						Spec: v1beta2.BGPPeerSpec{
+							MyASN:      42,
+							ASN:        142,
+							Address:    "1.2.3.4",
+							Port:       1179,
+							BFDProfile: "with-echo",
+						},
+					},
+				},
+			},
+			want: &Config{
+				Peers: map[string]*Peer{
+					"peer1": {
+						Name:          "peer1",
+						MyASN:         42,
+						ASN:           142,
+						Addr:          net.ParseIP("1.2.3.4"),
+						Port:          1179,
+						HoldTime:      90 * time.Second,
+						KeepaliveTime: 30 * time.Second,
+						NodeSelectors: []labels.Selector{labels.Everything()},
+						BFDProfile:    "with-echo"},
+				},
+				Pools: &Pools{ByName: map[string]*Pool{
+					"pool1": {
+						Name:       "pool1",
+						CIDR:       []*net.IPNet{ipnet("1.2.3.4/24")},
+						AutoAssign: true,
+						BGPAdvertisements: []*BGPAdvertisement{
+							{
+								Name:                "adv",
+								AggregationLength:   32,
+								AggregationLengthV6: 128,
+								Communities:         map[uint32]bool{},
+								Nodes:               map[string]bool{},
+							},
+						},
+					},
+				}},
+				BFDProfiles: map[string]*BFDProfile{
+					"with-echo": {
+						Name:     "with-echo",
+						EchoMode: true,
+					},
+				},
+			},
+		},
+		{
 			desc: "config mixing legacy pools with IP pools",
 			crs: ClusterResources{
 				Peers: []v1beta2.BGPPeer{
 					{
+						ObjectMeta: v1.ObjectMeta{
+							Name: "peer1",
+						},
 						Spec: v1beta2.BGPPeerSpec{
 							MyASN:        42,
 							ASN:          142,
@@ -1829,8 +2096,9 @@ func TestParse(t *testing.T) {
 				},
 			},
 			want: &Config{
-				Peers: []*Peer{
-					{
+				Peers: map[string]*Peer{
+					"peer1": {
+						Name:          "peer1",
 						MyASN:         42,
 						ASN:           142,
 						Addr:          net.ParseIP("1.2.3.4"),
@@ -1851,6 +2119,7 @@ func TestParse(t *testing.T) {
 						AutoAssign:    false,
 						BGPAdvertisements: []*BGPAdvertisement{
 							{
+								Name:                "adv1",
 								AggregationLength:   32,
 								AggregationLengthV6: 128,
 								LocalPref:           100,
@@ -1949,6 +2218,7 @@ func TestParse(t *testing.T) {
 					},
 				}},
 				BFDProfiles: map[string]*BFDProfile{},
+				Peers:       map[string]*Peer{},
 			},
 		},
 		{
@@ -2084,6 +2354,7 @@ func TestParse(t *testing.T) {
 						AutoAssign: true,
 						BGPAdvertisements: []*BGPAdvertisement{
 							{
+								Name:                "adv1",
 								AggregationLength:   32,
 								AggregationLengthV6: 128,
 								LocalPref:           100,
@@ -2102,6 +2373,7 @@ func TestParse(t *testing.T) {
 						AutoAssign: true,
 						BGPAdvertisements: []*BGPAdvertisement{
 							{
+								Name:                "adv2",
 								AggregationLength:   32,
 								AggregationLengthV6: 128,
 								LocalPref:           200,
@@ -2113,6 +2385,7 @@ func TestParse(t *testing.T) {
 					},
 				}},
 				BFDProfiles: map[string]*BFDProfile{},
+				Peers:       map[string]*Peer{},
 			},
 		},
 		{
@@ -2163,6 +2436,7 @@ func TestParse(t *testing.T) {
 					},
 				}},
 				BFDProfiles: map[string]*BFDProfile{},
+				Peers:       map[string]*Peer{},
 			},
 		},
 		{
@@ -2381,6 +2655,7 @@ func TestParse(t *testing.T) {
 					},
 				}},
 				BFDProfiles: map[string]*BFDProfile{},
+				Peers:       map[string]*Peer{},
 			},
 		},
 		{
@@ -2539,6 +2814,7 @@ func TestParse(t *testing.T) {
 						AutoAssign: true,
 						BGPAdvertisements: []*BGPAdvertisement{
 							{
+								Name:                "adv1",
 								AggregationLength:   32,
 								AggregationLengthV6: 128,
 								Communities:         map[uint32]bool{},
@@ -2558,6 +2834,7 @@ func TestParse(t *testing.T) {
 						AutoAssign: true,
 						BGPAdvertisements: []*BGPAdvertisement{
 							{
+								Name:                "adv2",
 								AggregationLength:   32,
 								AggregationLengthV6: 128,
 								Communities:         map[uint32]bool{},
@@ -2568,6 +2845,7 @@ func TestParse(t *testing.T) {
 					},
 				}},
 				BFDProfiles: map[string]*BFDProfile{},
+				Peers:       map[string]*Peer{},
 			},
 		},
 		{
@@ -2784,6 +3062,7 @@ func TestParse(t *testing.T) {
 						AutoAssign: true,
 						BGPAdvertisements: []*BGPAdvertisement{
 							{
+								Name:                "adv1",
 								AggregationLength:   32,
 								AggregationLengthV6: 128,
 								Communities:         map[uint32]bool{},
@@ -2803,6 +3082,7 @@ func TestParse(t *testing.T) {
 					},
 				}},
 				BFDProfiles: map[string]*BFDProfile{},
+				Peers:       map[string]*Peer{},
 			},
 		},
 		{
@@ -2847,8 +3127,8 @@ func TestParse(t *testing.T) {
 				},
 			},
 			want: &Config{
-				Peers: []*Peer{
-					{
+				Peers: map[string]*Peer{
+					"peer1": {
 						Name:          "peer1",
 						MyASN:         42,
 						ASN:           42,
@@ -2866,6 +3146,7 @@ func TestParse(t *testing.T) {
 						CIDR:       []*net.IPNet{ipnet("1.2.3.0/24")},
 						BGPAdvertisements: []*BGPAdvertisement{
 							{
+								Name:                "adv1",
 								AggregationLength:   32,
 								AggregationLengthV6: 128,
 								LocalPref:           100,

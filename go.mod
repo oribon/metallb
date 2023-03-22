@@ -23,15 +23,15 @@ require (
 	github.com/prometheus/client_model v0.3.0
 	github.com/prometheus/common v0.39.0
 	golang.org/x/sync v0.1.0
-	golang.org/x/sys v0.4.0
+	golang.org/x/sys v0.6.0
 	k8s.io/api v0.26.1
 	k8s.io/apiextensions-apiserver v0.26.1
 	k8s.io/apimachinery v0.26.1
-	k8s.io/client-go v1.5.2
+	k8s.io/client-go v0.26.1
 	k8s.io/klog v1.0.0
 	k8s.io/kubernetes v1.26.1
 	k8s.io/pod-security-admission v0.0.0
-	sigs.k8s.io/controller-runtime v0.14.1
+	sigs.k8s.io/controller-runtime v0.14.5
 	sigs.k8s.io/yaml v1.3.0
 )
 
