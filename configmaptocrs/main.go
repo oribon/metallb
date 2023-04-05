@@ -64,7 +64,7 @@ func main() {
 
 	err = generate(f, *source)
 	if err != nil {
-		log.Fatalf("failed to generate resources: %s", err)
+		log.Printf("failed to generate resources: %s", err)
 	}
 }
 
@@ -112,7 +112,7 @@ func readConfig(origin string) ([]byte, error) {
 	fp := filepath.Join(inputDirPath, origin)
 	fp = filepath.Clean(fp)
 	if !strings.HasPrefix(fp, path.Clean(inputDirPath)) {
-		return nil, fmt.Errorf("Unsafe path %s", origin)
+		return nil, fmt.Errorf("unsafe path %s", origin)
 	}
 	f, err := os.Open(filepath.Clean(fp)) // Clean have to happen here to avoid https://github.com/securego/gosec/issues/893
 	if err != nil {
@@ -163,7 +163,7 @@ func getConfigMapData(raw []byte) ([]byte, error) {
 
 	data := []byte(cm.Data["config"])
 	if len(data) == 0 {
-		return nil, fmt.Errorf("bad ConfigMap. no data.")
+		return nil, fmt.Errorf("bad ConfigMap: no data")
 	}
 
 	return data, nil
@@ -396,7 +396,7 @@ func bgpAdvertisementsFor(c *configFile) []v1beta1.BGPAdvertisement {
 		for _, bgpAdv := range ap.BGPAdvertisements {
 			var b v1beta1.BGPAdvertisement
 			b.Name = fmt.Sprintf("bgpadvertisement%d", index)
-			index = index + 1
+			index++
 			b.Namespace = resourcesNameSpace
 			b.Spec.Communities = make([]string, len(bgpAdv.Communities))
 			copy(b.Spec.Communities, bgpAdv.Communities)
@@ -408,7 +408,7 @@ func bgpAdvertisementsFor(c *configFile) []v1beta1.BGPAdvertisement {
 		}
 		if len(ap.BGPAdvertisements) == 0 && ap.Protocol == BGP {
 			res = append(res, emptyBGPAdv(ap.Name, index))
-			index = index + 1
+			index++
 		}
 	}
 	return res
@@ -440,7 +440,7 @@ func l2AdvertisementsFor(c *configFile) []v1beta1.L2Advertisement {
 					IPAddressPools: []string{addresspool.Name},
 				},
 			}
-			index = index + 1
+			index++
 			res = append(res, l2Adv)
 		}
 	}

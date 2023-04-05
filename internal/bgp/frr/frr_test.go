@@ -31,7 +31,6 @@ func testOsHostname() (string, error) {
 }
 
 func testCompareFiles(t *testing.T, configFile, goldenFile string) {
-
 	var lastError error
 
 	// Try comparing files multiple times because tests can generate more than one configuration
@@ -102,7 +101,7 @@ func TestSingleEBGPSessionMultiHop(t *testing.T) {
 	testSetup(t)
 
 	l := log.NewNopLogger()
-	sessionManager := NewSessionManager(l, logging.LevelInfo)
+	sessionManager := mockNewSessionManager(l, logging.LevelInfo)
 	defer close(sessionManager.reloadConfig)
 	session, err := sessionManager.NewSession(l,
 		bgp.SessionParameters{
@@ -129,7 +128,7 @@ func TestSingleEBGPSessionOneHop(t *testing.T) {
 	testSetup(t)
 
 	l := log.NewNopLogger()
-	sessionManager := NewSessionManager(l, logging.LevelInfo)
+	sessionManager := mockNewSessionManager(l, logging.LevelInfo)
 	defer close(sessionManager.reloadConfig)
 	session, err := sessionManager.NewSession(l,
 		bgp.SessionParameters{
@@ -157,7 +156,7 @@ func TestSingleIPv6EBGPSessionOneHop(t *testing.T) {
 	testSetup(t)
 
 	l := log.NewNopLogger()
-	sessionManager := NewSessionManager(l, logging.LevelInfo)
+	sessionManager := mockNewSessionManager(l, logging.LevelInfo)
 	defer close(sessionManager.reloadConfig)
 	session, err := sessionManager.NewSession(l,
 		bgp.SessionParameters{
@@ -185,7 +184,7 @@ func TestSingleIBGPSession(t *testing.T) {
 	testSetup(t)
 
 	l := log.NewNopLogger()
-	sessionManager := NewSessionManager(l, logging.LevelInfo)
+	sessionManager := mockNewSessionManager(l, logging.LevelInfo)
 	defer close(sessionManager.reloadConfig)
 	session, err := sessionManager.NewSession(l,
 		bgp.SessionParameters{
@@ -213,7 +212,7 @@ func TestSingleIPv6IBGPSession(t *testing.T) {
 	testSetup(t)
 
 	l := log.NewNopLogger()
-	sessionManager := NewSessionManager(l, logging.LevelInfo)
+	sessionManager := mockNewSessionManager(l, logging.LevelInfo)
 	defer close(sessionManager.reloadConfig)
 	session, err := sessionManager.NewSession(l,
 		bgp.SessionParameters{
@@ -240,7 +239,7 @@ func TestSingleSessionClose(t *testing.T) {
 	testSetup(t)
 
 	l := log.NewNopLogger()
-	sessionManager := NewSessionManager(l, logging.LevelInfo)
+	sessionManager := mockNewSessionManager(l, logging.LevelInfo)
 	defer close(sessionManager.reloadConfig)
 
 	session, err := sessionManager.NewSession(l,
@@ -268,7 +267,7 @@ func TestTwoSessions(t *testing.T) {
 	testSetup(t)
 
 	l := log.NewNopLogger()
-	sessionManager := NewSessionManager(l, logging.LevelInfo)
+	sessionManager := mockNewSessionManager(l, logging.LevelInfo)
 	defer close(sessionManager.reloadConfig)
 	session1, err := sessionManager.NewSession(l,
 		bgp.SessionParameters{
@@ -314,7 +313,7 @@ func TestTwoIPv6Sessions(t *testing.T) {
 	testSetup(t)
 
 	l := log.NewNopLogger()
-	sessionManager := NewSessionManager(l, logging.LevelInfo)
+	sessionManager := mockNewSessionManager(l, logging.LevelInfo)
 	defer close(sessionManager.reloadConfig)
 
 	session1, err := sessionManager.NewSession(l,
@@ -359,7 +358,7 @@ func TestTwoSessionsDuplicate(t *testing.T) {
 	testSetup(t)
 
 	l := log.NewNopLogger()
-	sessionManager := NewSessionManager(l, logging.LevelInfo)
+	sessionManager := mockNewSessionManager(l, logging.LevelInfo)
 	defer close(sessionManager.reloadConfig)
 	session1, err := sessionManager.NewSession(l,
 		bgp.SessionParameters{
@@ -404,7 +403,7 @@ func TestTwoSessionsDuplicateRouter(t *testing.T) {
 	testSetup(t)
 
 	l := log.NewNopLogger()
-	sessionManager := NewSessionManager(l, logging.LevelInfo)
+	sessionManager := mockNewSessionManager(l, logging.LevelInfo)
 	defer close(sessionManager.reloadConfig)
 
 	session1, err := sessionManager.NewSession(l,
@@ -450,7 +449,7 @@ func TestSingleAdvertisement(t *testing.T) {
 	testSetup(t)
 
 	l := log.NewNopLogger()
-	sessionManager := NewSessionManager(l, logging.LevelInfo)
+	sessionManager := mockNewSessionManager(l, logging.LevelInfo)
 	defer close(sessionManager.reloadConfig)
 	session, err := sessionManager.NewSession(l,
 		bgp.SessionParameters{
@@ -497,7 +496,7 @@ func TestSingleAdvertisementNoRouterID(t *testing.T) {
 	testSetup(t)
 
 	l := log.NewNopLogger()
-	sessionManager := NewSessionManager(l, logging.LevelInfo)
+	sessionManager := mockNewSessionManager(l, logging.LevelInfo)
 	defer close(sessionManager.reloadConfig)
 	session, err := sessionManager.NewSession(l,
 		bgp.SessionParameters{
@@ -539,7 +538,7 @@ func TestSingleAdvertisementInvalidNoPort(t *testing.T) {
 	testSetup(t)
 
 	l := log.NewNopLogger()
-	sessionManager := NewSessionManager(l, logging.LevelInfo)
+	sessionManager := mockNewSessionManager(l, logging.LevelInfo)
 	defer close(sessionManager.reloadConfig)
 	session, err := sessionManager.NewSession(l,
 		bgp.SessionParameters{
@@ -567,7 +566,7 @@ func TestSingleAdvertisementStop(t *testing.T) {
 	testSetup(t)
 
 	l := log.NewNopLogger()
-	sessionManager := NewSessionManager(l, logging.LevelInfo)
+	sessionManager := mockNewSessionManager(l, logging.LevelInfo)
 	defer close(sessionManager.reloadConfig)
 	session, err := sessionManager.NewSession(l,
 		bgp.SessionParameters{
@@ -614,7 +613,7 @@ func TestSingleAdvertisementChange(t *testing.T) {
 	testSetup(t)
 
 	l := log.NewNopLogger()
-	sessionManager := NewSessionManager(l, logging.LevelInfo)
+	sessionManager := mockNewSessionManager(l, logging.LevelInfo)
 	defer close(sessionManager.reloadConfig)
 	session, err := sessionManager.NewSession(l,
 		bgp.SessionParameters{
@@ -669,7 +668,7 @@ func TestSingleAdvertisementWithPeerSelector(t *testing.T) {
 	testSetup(t)
 
 	l := log.NewNopLogger()
-	sessionManager := NewSessionManager(l, logging.LevelInfo)
+	sessionManager := mockNewSessionManager(l, logging.LevelInfo)
 	defer close(sessionManager.reloadConfig)
 
 	session, err := sessionManager.NewSession(l,
@@ -718,7 +717,7 @@ func TestSingleAdvertisementNonExistingPeer(t *testing.T) {
 	testSetup(t)
 
 	l := log.NewNopLogger()
-	sessionManager := NewSessionManager(l, logging.LevelInfo)
+	sessionManager := mockNewSessionManager(l, logging.LevelInfo)
 	defer close(sessionManager.reloadConfig)
 	session, err := sessionManager.NewSession(l,
 		bgp.SessionParameters{
@@ -766,7 +765,7 @@ func TestTwoAdvertisements(t *testing.T) {
 	testSetup(t)
 
 	l := log.NewNopLogger()
-	sessionManager := NewSessionManager(l, logging.LevelInfo)
+	sessionManager := mockNewSessionManager(l, logging.LevelInfo)
 	defer close(sessionManager.reloadConfig)
 	session, err := sessionManager.NewSession(l,
 		bgp.SessionParameters{
@@ -819,7 +818,7 @@ func TestTwoAdvertisementsTwoSessions(t *testing.T) {
 	testSetup(t)
 
 	l := log.NewNopLogger()
-	sessionManager := NewSessionManager(l, logging.LevelInfo)
+	sessionManager := mockNewSessionManager(l, logging.LevelInfo)
 	defer close(sessionManager.reloadConfig)
 	session, err := sessionManager.NewSession(l,
 		bgp.SessionParameters{
@@ -896,7 +895,7 @@ func TestTwoAdvertisementsTwoSessionsOneWithPeerSelector(t *testing.T) {
 	testSetup(t)
 
 	l := log.NewNopLogger()
-	sessionManager := NewSessionManager(l, logging.LevelInfo)
+	sessionManager := mockNewSessionManager(l, logging.LevelInfo)
 	defer close(sessionManager.reloadConfig)
 	session, err := sessionManager.NewSession(l,
 		bgp.SessionParameters{
@@ -970,11 +969,43 @@ func TestTwoAdvertisementsTwoSessionsOneWithPeerSelector(t *testing.T) {
 	testCheckConfigFile(t)
 }
 
+func TestSingleSessionExtras(t *testing.T) {
+	testSetup(t)
+
+	l := log.NewNopLogger()
+	sessionManager := mockNewSessionManager(l, logging.LevelInfo)
+	defer close(sessionManager.reloadConfig)
+	err := sessionManager.SyncExtraInfo("# hello")
+	if err != nil {
+		t.Fatalf("Could not sync extra info")
+	}
+	session, err := sessionManager.NewSession(l,
+		bgp.SessionParameters{
+			PeerAddress:   "127.0.0.2:179",
+			SourceAddress: net.ParseIP("10.1.1.254"),
+			MyASN:         100,
+			RouterID:      net.ParseIP("10.1.1.254"),
+			PeerASN:       200,
+			HoldTime:      time.Second,
+			KeepAliveTime: time.Second,
+			Password:      "password",
+			CurrentNode:   "hostname",
+			EBGPMultiHop:  false,
+			SessionName:   "test-peer"})
+
+	if err != nil {
+		t.Fatalf("Could not create session: %s", err)
+	}
+	defer session.Close()
+
+	testCheckConfigFile(t)
+}
+
 func TestLoggingConfiguration(t *testing.T) {
 	testSetup(t)
 
 	l := log.NewNopLogger()
-	sessionManager := NewSessionManager(l, logging.LevelWarn)
+	sessionManager := mockNewSessionManager(l, logging.LevelWarn)
 	defer close(sessionManager.reloadConfig)
 
 	config, err := sessionManager.createConfig()
@@ -990,7 +1021,7 @@ func TestLoggingConfigurationDebug(t *testing.T) {
 	testSetup(t)
 
 	l := log.NewNopLogger()
-	sessionManager := NewSessionManager(l, logging.LevelDebug)
+	sessionManager := mockNewSessionManager(l, logging.LevelDebug)
 	defer close(sessionManager.reloadConfig)
 
 	config, err := sessionManager.createConfig()
@@ -1010,7 +1041,7 @@ func TestLoggingConfigurationOverrideByEnvironmentVar(t *testing.T) {
 	t.Cleanup(func() { os.Setenv("FRR_LOGGING_LEVEL", orig) })
 
 	l := log.NewNopLogger()
-	sessionManager := NewSessionManager(l, logging.LevelDebug)
+	sessionManager := mockNewSessionManager(l, logging.LevelDebug)
 	defer close(sessionManager.reloadConfig)
 
 	config, err := sessionManager.createConfig()

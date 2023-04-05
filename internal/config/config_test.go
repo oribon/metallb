@@ -13,7 +13,6 @@ import (
 	"go.universe.tf/metallb/internal/pointer"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
@@ -38,7 +37,7 @@ func TestParse(t *testing.T) {
 	testAdvName := "testAdv"
 	testPoolName := "testPool"
 	testPool := v1beta1.IPAddressPool{
-		ObjectMeta: v1.ObjectMeta{Name: testPoolName},
+		ObjectMeta: metav1.ObjectMeta{Name: testPoolName},
 		Spec: v1beta1.IPAddressPoolSpec{
 			Addresses: []string{
 				"10.20.0.0/16",
@@ -65,7 +64,7 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				Peers: []v1beta2.BGPPeer{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "peer1",
 						},
 						Spec: v1beta2.BGPPeerSpec{
@@ -73,7 +72,7 @@ func TestParse(t *testing.T) {
 							ASN:          142,
 							Address:      "1.2.3.4",
 							Port:         1179,
-							HoldTime:     v1.Duration{Duration: 180 * time.Second},
+							HoldTime:     metav1.Duration{Duration: 180 * time.Second},
 							RouterID:     "10.20.30.40",
 							SrcAddress:   "10.20.30.40",
 							EBGPMultiHop: true,
@@ -81,7 +80,7 @@ func TestParse(t *testing.T) {
 						},
 					},
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "peer2",
 						},
 						Spec: v1beta2.BGPPeerSpec{
@@ -89,12 +88,12 @@ func TestParse(t *testing.T) {
 							ASN:          200,
 							Address:      "2.3.4.5",
 							EBGPMultiHop: false,
-							NodeSelectors: []v1.LabelSelector{
+							NodeSelectors: []metav1.LabelSelector{
 								{
 									MatchLabels: map[string]string{
 										"foo": "bar",
 									},
-									MatchExpressions: []v1.LabelSelectorRequirement{
+									MatchExpressions: []metav1.LabelSelectorRequirement{
 										{
 											Key:      "bar",
 											Operator: "In",
@@ -108,7 +107,7 @@ func TestParse(t *testing.T) {
 				},
 				Pools: []v1beta1.IPAddressPool{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "pool1",
 						},
 						Spec: v1beta1.IPAddressPoolSpec{
@@ -121,7 +120,7 @@ func TestParse(t *testing.T) {
 						},
 					},
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "pool2",
 						},
 						Spec: v1beta1.IPAddressPoolSpec{
@@ -131,7 +130,7 @@ func TestParse(t *testing.T) {
 						},
 					},
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "pool3",
 						},
 						Spec: v1beta1.IPAddressPoolSpec{
@@ -144,7 +143,7 @@ func TestParse(t *testing.T) {
 						},
 					},
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "pool4",
 						},
 						Spec: v1beta1.IPAddressPoolSpec{
@@ -156,7 +155,7 @@ func TestParse(t *testing.T) {
 				},
 				BGPAdvs: []v1beta1.BGPAdvertisement{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "adv1",
 						},
 						Spec: v1beta1.BGPAdvertisementSpec{
@@ -168,7 +167,7 @@ func TestParse(t *testing.T) {
 						},
 					},
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "adv2",
 						},
 						Spec: v1beta1.BGPAdvertisementSpec{
@@ -178,7 +177,7 @@ func TestParse(t *testing.T) {
 						},
 					},
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "adv3",
 						},
 						Spec: v1beta1.BGPAdvertisementSpec{
@@ -188,7 +187,7 @@ func TestParse(t *testing.T) {
 				},
 				L2Advs: []v1beta1.L2Advertisement{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "l2adv1",
 						},
 						Spec: v1beta1.L2AdvertisementSpec{
@@ -196,14 +195,14 @@ func TestParse(t *testing.T) {
 						},
 					},
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "l2adv2",
 						},
 					},
 				},
 				Communities: []v1beta1.Community{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "community",
 						},
 						Spec: v1beta1.CommunitySpec{
@@ -270,7 +269,7 @@ func TestParse(t *testing.T) {
 								Nodes:               map[string]bool{},
 							},
 						},
-						L2Advertisements: []*L2Advertisement{&L2Advertisement{
+						L2Advertisements: []*L2Advertisement{{
 							Nodes:         map[string]bool{},
 							AllInterfaces: true,
 						}},
@@ -288,7 +287,7 @@ func TestParse(t *testing.T) {
 								Nodes:               map[string]bool{},
 							},
 						},
-						L2Advertisements: []*L2Advertisement{&L2Advertisement{
+						L2Advertisements: []*L2Advertisement{{
 							Nodes:         map[string]bool{},
 							AllInterfaces: true,
 						}},
@@ -309,7 +308,7 @@ func TestParse(t *testing.T) {
 							ipnet("40.0.0.240/32"),
 							ipnet("40.0.0.250/32"),
 						},
-						L2Advertisements: []*L2Advertisement{&L2Advertisement{
+						L2Advertisements: []*L2Advertisement{{
 							Nodes:         map[string]bool{},
 							AllInterfaces: true,
 						}},
@@ -318,7 +317,7 @@ func TestParse(t *testing.T) {
 					"pool4": {
 						Name: "pool4",
 						CIDR: []*net.IPNet{ipnet("2001:db8::/64")},
-						L2Advertisements: []*L2Advertisement{&L2Advertisement{
+						L2Advertisements: []*L2Advertisement{{
 							Nodes:         map[string]bool{},
 							AllInterfaces: true,
 						}},
@@ -334,7 +333,7 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				Pools: []v1beta1.IPAddressPool{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "pool1",
 						},
 						Spec: v1beta1.IPAddressPoolSpec{
@@ -349,7 +348,7 @@ func TestParse(t *testing.T) {
 						},
 					},
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "pool2",
 						},
 						Spec: v1beta1.IPAddressPoolSpec{
@@ -357,11 +356,11 @@ func TestParse(t *testing.T) {
 								"30.0.0.0/8",
 							},
 							AllocateTo: &v1beta1.ServiceAllocation{Priority: 2,
-								NamespaceSelectors: []v1.LabelSelector{{MatchLabels: map[string]string{"team": "metallb"}}}},
+								NamespaceSelectors: []metav1.LabelSelector{{MatchLabels: map[string]string{"team": "metallb"}}}},
 						},
 					},
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "pool3",
 						},
 						Spec: v1beta1.IPAddressPoolSpec{
@@ -369,18 +368,18 @@ func TestParse(t *testing.T) {
 								"40.0.0.0/8",
 							},
 							AllocateTo: &v1beta1.ServiceAllocation{Priority: 3,
-								NamespaceSelectors: []v1.LabelSelector{{MatchLabels: map[string]string{"team": "red"}}}},
+								NamespaceSelectors: []metav1.LabelSelector{{MatchLabels: map[string]string{"team": "red"}}}},
 						},
 					},
 				},
 				Namespaces: []corev1.Namespace{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "test-ns1",
 						},
 					},
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name:   "test-ns2",
 							Labels: map[string]string{"team": "metallb"},
 						},
@@ -421,7 +420,7 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				Pools: []v1beta1.IPAddressPool{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "pool1",
 						},
 						Spec: v1beta1.IPAddressPoolSpec{
@@ -438,7 +437,7 @@ func TestParse(t *testing.T) {
 				},
 				Namespaces: []corev1.Namespace{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "test-ns1",
 						},
 					},
@@ -451,7 +450,7 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				Pools: []v1beta1.IPAddressPool{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "pool1",
 						},
 						Spec: v1beta1.IPAddressPoolSpec{
@@ -463,7 +462,7 @@ func TestParse(t *testing.T) {
 							AutoAssign:    pointer.BoolPtr(false),
 							AllocateTo: &v1beta1.ServiceAllocation{
 								Priority: 1,
-								NamespaceSelectors: []v1.LabelSelector{{MatchLabels: map[string]string{"foo": "bar"}},
+								NamespaceSelectors: []metav1.LabelSelector{{MatchLabels: map[string]string{"foo": "bar"}},
 									{MatchLabels: map[string]string{"foo": "bar"}}},
 							},
 						},
@@ -471,7 +470,7 @@ func TestParse(t *testing.T) {
 				},
 				Namespaces: []corev1.Namespace{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name:   "test-ns1",
 							Labels: map[string]string{"foo": "bar"},
 						},
@@ -485,7 +484,7 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				Pools: []v1beta1.IPAddressPool{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "pool1",
 						},
 						Spec: v1beta1.IPAddressPoolSpec{
@@ -493,11 +492,11 @@ func TestParse(t *testing.T) {
 								"30.0.0.0/8",
 							},
 							AllocateTo: &v1beta1.ServiceAllocation{Priority: 2,
-								ServiceSelectors: []v1.LabelSelector{{MatchLabels: map[string]string{"team": "metallb"}}}},
+								ServiceSelectors: []metav1.LabelSelector{{MatchLabels: map[string]string{"team": "metallb"}}}},
 						},
 					},
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "pool2",
 						},
 						Spec: v1beta1.IPAddressPoolSpec{
@@ -505,7 +504,7 @@ func TestParse(t *testing.T) {
 								"40.0.0.0/8",
 							},
 							AllocateTo: &v1beta1.ServiceAllocation{Priority: 3,
-								ServiceSelectors: []v1.LabelSelector{{MatchLabels: map[string]string{"team": "red"}}}},
+								ServiceSelectors: []metav1.LabelSelector{{MatchLabels: map[string]string{"team": "red"}}}},
 						},
 					},
 				},
@@ -536,7 +535,7 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				Pools: []v1beta1.IPAddressPool{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "pool1",
 						},
 						Spec: v1beta1.IPAddressPoolSpec{
@@ -544,7 +543,7 @@ func TestParse(t *testing.T) {
 								"30.0.0.0/8",
 							},
 							AllocateTo: &v1beta1.ServiceAllocation{Priority: 2,
-								ServiceSelectors: []v1.LabelSelector{{MatchExpressions: []metav1.LabelSelectorRequirement{
+								ServiceSelectors: []metav1.LabelSelector{{MatchExpressions: []metav1.LabelSelectorRequirement{
 									{
 										Key:      "foo",
 										Operator: metav1.LabelSelectorOpIn,
@@ -562,7 +561,7 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				Pools: []v1beta1.IPAddressPool{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "pool1",
 						},
 						Spec: v1beta1.IPAddressPoolSpec{
@@ -571,11 +570,11 @@ func TestParse(t *testing.T) {
 							},
 							AllocateTo: &v1beta1.ServiceAllocation{Priority: 2,
 								Namespaces:       []string{"test-ns1"},
-								ServiceSelectors: []v1.LabelSelector{{MatchLabels: map[string]string{"testsvc-1": "1"}}}},
+								ServiceSelectors: []metav1.LabelSelector{{MatchLabels: map[string]string{"testsvc-1": "1"}}}},
 						},
 					},
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "pool2",
 						},
 						Spec: v1beta1.IPAddressPoolSpec{
@@ -583,19 +582,19 @@ func TestParse(t *testing.T) {
 								"40.0.0.0/8",
 							},
 							AllocateTo: &v1beta1.ServiceAllocation{Priority: 3,
-								NamespaceSelectors: []v1.LabelSelector{{MatchLabels: map[string]string{"team": "metallb"}}},
-								ServiceSelectors:   []v1.LabelSelector{{MatchLabels: map[string]string{"testsvc-2": "2"}}}},
+								NamespaceSelectors: []metav1.LabelSelector{{MatchLabels: map[string]string{"team": "metallb"}}},
+								ServiceSelectors:   []metav1.LabelSelector{{MatchLabels: map[string]string{"testsvc-2": "2"}}}},
 						},
 					},
 				},
 				Namespaces: []corev1.Namespace{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "test-ns1",
 						},
 					},
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name:   "test-ns2",
 							Labels: map[string]string{"team": "metallb"},
 						},
@@ -726,7 +725,7 @@ func TestParse(t *testing.T) {
 							MyASN:    42,
 							ASN:      42,
 							Address:  "1.2.3.4",
-							HoldTime: v1.Duration{Duration: time.Second},
+							HoldTime: metav1.Duration{Duration: time.Second},
 						},
 					},
 				},
@@ -752,7 +751,7 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				Peers: []v1beta2.BGPPeer{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "peer1",
 						},
 						Spec: v1beta2.BGPPeerSpec{
@@ -788,12 +787,12 @@ func TestParse(t *testing.T) {
 							MyASN:   42,
 							ASN:     42,
 							Address: "1.2.3.4",
-							NodeSelectors: []v1.LabelSelector{
+							NodeSelectors: []metav1.LabelSelector{
 								{
 									MatchLabels: map[string]string{
 										"foo": "bar",
 									},
-									MatchExpressions: []v1.LabelSelectorRequirement{
+									MatchExpressions: []metav1.LabelSelectorRequirement{
 										{
 											Operator: "In",
 											Values:   []string{"quux"},
@@ -815,12 +814,12 @@ func TestParse(t *testing.T) {
 							MyASN:   42,
 							ASN:     42,
 							Address: "1.2.3.4",
-							NodeSelectors: []v1.LabelSelector{
+							NodeSelectors: []metav1.LabelSelector{
 								{
 									MatchLabels: map[string]string{
 										"foo": "bar",
 									},
-									MatchExpressions: []v1.LabelSelectorRequirement{
+									MatchExpressions: []metav1.LabelSelectorRequirement{
 										{
 											Key:    "bar",
 											Values: []string{"quux"},
@@ -842,12 +841,12 @@ func TestParse(t *testing.T) {
 							MyASN:   42,
 							ASN:     42,
 							Address: "1.2.3.4",
-							NodeSelectors: []v1.LabelSelector{
+							NodeSelectors: []metav1.LabelSelector{
 								{
 									MatchLabels: map[string]string{
 										"foo": "bar",
 									},
-									MatchExpressions: []v1.LabelSelectorRequirement{
+									MatchExpressions: []metav1.LabelSelectorRequirement{
 										{
 											Key:      "bar",
 											Operator: "surrounds",
@@ -866,7 +865,7 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				Peers: []v1beta2.BGPPeer{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "peer",
 						},
 						Spec: v1beta2.BGPPeerSpec{
@@ -874,12 +873,12 @@ func TestParse(t *testing.T) {
 							ASN:          200,
 							Address:      "2.3.4.5",
 							EBGPMultiHop: false,
-							NodeSelectors: []v1.LabelSelector{
+							NodeSelectors: []metav1.LabelSelector{
 								{
 									MatchLabels: map[string]string{
 										"foo": "bar",
 									},
-									MatchExpressions: []v1.LabelSelectorRequirement{
+									MatchExpressions: []metav1.LabelSelectorRequirement{
 										{
 											Key:      "bar",
 											Operator: metav1.LabelSelectorOpIn,
@@ -927,7 +926,7 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				Pools: []v1beta1.IPAddressPool{
 					{
-						ObjectMeta: v1.ObjectMeta{Name: "pool1"},
+						ObjectMeta: metav1.ObjectMeta{Name: "pool1"},
 						Spec:       v1beta1.IPAddressPoolSpec{},
 					},
 				},
@@ -938,7 +937,7 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				Pools: []v1beta1.IPAddressPool{
 					{
-						ObjectMeta: v1.ObjectMeta{Name: "pool1"},
+						ObjectMeta: metav1.ObjectMeta{Name: "pool1"},
 					},
 				},
 			},
@@ -948,7 +947,7 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				Pools: []v1beta1.IPAddressPool{
 					{
-						ObjectMeta: v1.ObjectMeta{Name: "pool1"},
+						ObjectMeta: metav1.ObjectMeta{Name: "pool1"},
 						Spec: v1beta1.IPAddressPoolSpec{
 							Addresses: []string{
 								"100.200.300.400/24",
@@ -963,7 +962,7 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				Pools: []v1beta1.IPAddressPool{
 					{
-						ObjectMeta: v1.ObjectMeta{Name: "pool1"},
+						ObjectMeta: metav1.ObjectMeta{Name: "pool1"},
 						Spec: v1beta1.IPAddressPoolSpec{
 							Addresses: []string{
 								"1.2.3.0/33",
@@ -978,7 +977,7 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				Pools: []v1beta1.IPAddressPool{
 					{
-						ObjectMeta: v1.ObjectMeta{Name: "pool1"},
+						ObjectMeta: metav1.ObjectMeta{Name: "pool1"},
 						Spec: v1beta1.IPAddressPoolSpec{
 							Addresses: []string{
 								"1.2.3.10-1.2.3.1",
@@ -993,7 +992,7 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				Pools: []v1beta1.IPAddressPool{
 					{
-						ObjectMeta: v1.ObjectMeta{Name: "pool1"},
+						ObjectMeta: metav1.ObjectMeta{Name: "pool1"},
 						Spec: v1beta1.IPAddressPoolSpec{
 							Addresses: []string{
 								"1.2.3.0/24",
@@ -1003,7 +1002,7 @@ func TestParse(t *testing.T) {
 				},
 				BGPAdvs: []v1beta1.BGPAdvertisement{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "adv3",
 						},
 					},
@@ -1035,7 +1034,7 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				Pools: []v1beta1.IPAddressPool{
 					{
-						ObjectMeta: v1.ObjectMeta{Name: "pool1"},
+						ObjectMeta: metav1.ObjectMeta{Name: "pool1"},
 						Spec: v1beta1.IPAddressPoolSpec{
 							Addresses: []string{
 								"1.2.3.0/24",
@@ -1045,7 +1044,7 @@ func TestParse(t *testing.T) {
 				},
 				BGPAdvs: []v1beta1.BGPAdvertisement{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "adv3",
 						},
 					},
@@ -1077,7 +1076,7 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				Pools: []v1beta1.IPAddressPool{
 					{
-						ObjectMeta: v1.ObjectMeta{Name: "pool1"},
+						ObjectMeta: metav1.ObjectMeta{Name: "pool1"},
 						Spec: v1beta1.IPAddressPoolSpec{
 							Addresses: []string{
 								"1.2.3.10-1.2.3.1",
@@ -1099,7 +1098,7 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				Pools: []v1beta1.IPAddressPool{
 					{
-						ObjectMeta: v1.ObjectMeta{Name: "pool1"},
+						ObjectMeta: metav1.ObjectMeta{Name: "pool1"},
 						Spec: v1beta1.IPAddressPoolSpec{
 							Addresses: []string{
 								"10.20.30.40/24",
@@ -1118,11 +1117,312 @@ func TestParse(t *testing.T) {
 			},
 		},
 		{
+			desc: "different local pref - same peers and nodes",
+			crs: ClusterResources{
+				Nodes: []corev1.Node{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "node1",
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "node2",
+						},
+					},
+				},
+				Pools: []v1beta1.IPAddressPool{
+					{
+						ObjectMeta: metav1.ObjectMeta{Name: "pool1"},
+						Spec: v1beta1.IPAddressPoolSpec{
+							Addresses: []string{
+								"10.20.30.40/24",
+							},
+						},
+					},
+				},
+				BGPAdvs: []v1beta1.BGPAdvertisement{
+					{
+						Spec: v1beta1.BGPAdvertisementSpec{
+							LocalPref: 100,
+						},
+					},
+					{
+						Spec: v1beta1.BGPAdvertisementSpec{
+							LocalPref: 200,
+						},
+					},
+				},
+			},
+		},
+		{
+			desc: "different local pref - different ipv4 aggregation length",
+			crs: ClusterResources{
+				Nodes: []corev1.Node{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "node1",
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "node2",
+						},
+					},
+				},
+				Pools: []v1beta1.IPAddressPool{
+					{
+						ObjectMeta: metav1.ObjectMeta{Name: "pool1"},
+						Spec: v1beta1.IPAddressPoolSpec{
+							Addresses: []string{
+								"10.20.30.40/24",
+							},
+						},
+					},
+				},
+				BGPAdvs: []v1beta1.BGPAdvertisement{
+					{
+						Spec: v1beta1.BGPAdvertisementSpec{
+							LocalPref:         100,
+							AggregationLength: pointer.Int32Ptr(24),
+						},
+					},
+					{
+						Spec: v1beta1.BGPAdvertisementSpec{
+							LocalPref: 200,
+						},
+					},
+				},
+			},
+		},
+		{
+			desc: "different local pref - different aggregation lengths",
+			crs: ClusterResources{
+				Nodes: []corev1.Node{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "node1",
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "node2",
+						},
+					},
+				},
+				Pools: []v1beta1.IPAddressPool{
+					{
+						ObjectMeta: metav1.ObjectMeta{Name: "pool1"},
+						Spec: v1beta1.IPAddressPoolSpec{
+							Addresses: []string{
+								"10.20.30.40/24",
+							},
+						},
+					},
+				},
+				BGPAdvs: []v1beta1.BGPAdvertisement{
+					{
+						Spec: v1beta1.BGPAdvertisementSpec{
+							LocalPref:           100,
+							AggregationLength:   pointer.Int32Ptr(24),
+							AggregationLengthV6: pointer.Int32Ptr(120),
+						},
+					},
+					{
+						Spec: v1beta1.BGPAdvertisementSpec{
+							LocalPref: 200,
+						},
+					},
+				},
+			},
+			want: &Config{
+				Pools: &Pools{ByName: map[string]*Pool{
+					"pool1": {
+						Name:       "pool1",
+						AutoAssign: true,
+						CIDR: []*net.IPNet{
+							ipnet("10.20.30.40/24"),
+						},
+						BGPAdvertisements: []*BGPAdvertisement{
+							{
+								AggregationLength:   24,
+								AggregationLengthV6: 120,
+								LocalPref:           100,
+								Communities:         map[uint32]bool{},
+								Nodes:               map[string]bool{"node1": true, "node2": true},
+							},
+							{
+								AggregationLength:   32,
+								AggregationLengthV6: 128,
+								LocalPref:           200,
+								Communities:         map[uint32]bool{},
+								Nodes:               map[string]bool{"node1": true, "node2": true},
+							},
+						},
+					},
+				}},
+				BFDProfiles: map[string]*BFDProfile{},
+				Peers:       map[string]*Peer{},
+			},
+		},
+		{
+			desc: "different local pref - same peers & different nodes",
+			crs: ClusterResources{
+				Nodes: []corev1.Node{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:   "node1",
+							Labels: map[string]string{"node": "node1"},
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:   "node2",
+							Labels: map[string]string{"node": "node2"},
+						},
+					},
+				},
+				Pools: []v1beta1.IPAddressPool{
+					{
+						ObjectMeta: metav1.ObjectMeta{Name: "pool1"},
+						Spec: v1beta1.IPAddressPoolSpec{
+							Addresses: []string{
+								"10.20.30.40/24",
+							},
+						},
+					},
+				},
+				BGPAdvs: []v1beta1.BGPAdvertisement{
+					{
+						Spec: v1beta1.BGPAdvertisementSpec{
+							LocalPref: 100,
+							NodeSelectors: []metav1.LabelSelector{
+								{
+									MatchLabels: map[string]string{"node": "node1"},
+								},
+							},
+						},
+					},
+					{
+						Spec: v1beta1.BGPAdvertisementSpec{
+							LocalPref: 200,
+							NodeSelectors: []metav1.LabelSelector{
+								{
+									MatchLabels: map[string]string{"node": "node2"},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: &Config{
+				Pools: &Pools{ByName: map[string]*Pool{
+					"pool1": {
+						Name:       "pool1",
+						AutoAssign: true,
+						CIDR: []*net.IPNet{
+							ipnet("10.20.30.40/24"),
+						},
+						BGPAdvertisements: []*BGPAdvertisement{
+							{
+								AggregationLength:   32,
+								AggregationLengthV6: 128,
+								LocalPref:           100,
+								Communities:         map[uint32]bool{},
+								Nodes:               map[string]bool{"node1": true},
+							},
+							{
+								AggregationLength:   32,
+								AggregationLengthV6: 128,
+								LocalPref:           200,
+								Communities:         map[uint32]bool{},
+								Nodes:               map[string]bool{"node2": true},
+							},
+						},
+					},
+				}},
+				BFDProfiles: map[string]*BFDProfile{},
+				Peers:       map[string]*Peer{},
+			},
+		},
+		{
+			desc: "different local pref - different peers & same nodes",
+			crs: ClusterResources{
+				Nodes: []corev1.Node{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "node1",
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "node2",
+						},
+					},
+				},
+				Pools: []v1beta1.IPAddressPool{
+					{
+						ObjectMeta: metav1.ObjectMeta{Name: "pool1"},
+						Spec: v1beta1.IPAddressPoolSpec{
+							Addresses: []string{
+								"10.20.30.40/24",
+							},
+						},
+					},
+				},
+				BGPAdvs: []v1beta1.BGPAdvertisement{
+					{
+						Spec: v1beta1.BGPAdvertisementSpec{
+							LocalPref: 100,
+							Peers:     []string{"peer1"},
+						},
+					},
+					{
+						Spec: v1beta1.BGPAdvertisementSpec{
+							LocalPref: 200,
+							Peers:     []string{"peer2"},
+						},
+					},
+				},
+			},
+			want: &Config{
+				Pools: &Pools{ByName: map[string]*Pool{
+					"pool1": {
+						Name:       "pool1",
+						AutoAssign: true,
+						CIDR: []*net.IPNet{
+							ipnet("10.20.30.40/24"),
+						},
+						BGPAdvertisements: []*BGPAdvertisement{
+							{
+								AggregationLength:   32,
+								AggregationLengthV6: 128,
+								LocalPref:           100,
+								Peers:               []string{"peer1"},
+								Communities:         map[uint32]bool{},
+								Nodes:               map[string]bool{"node1": true, "node2": true},
+							},
+							{
+								AggregationLength:   32,
+								AggregationLengthV6: 128,
+								LocalPref:           200,
+								Peers:               []string{"peer2"},
+								Communities:         map[uint32]bool{},
+								Nodes:               map[string]bool{"node1": true, "node2": true},
+							},
+						},
+					},
+				}},
+				BFDProfiles: map[string]*BFDProfile{},
+				Peers:       map[string]*Peer{},
+			},
+		},
+		{
 			desc: "aggregation length by range",
 			crs: ClusterResources{
 				Pools: []v1beta1.IPAddressPool{
 					{
-						ObjectMeta: v1.ObjectMeta{Name: "pool1"},
+						ObjectMeta: metav1.ObjectMeta{Name: "pool1"},
 						Spec: v1beta1.IPAddressPoolSpec{
 							Addresses: []string{
 								"3.3.3.2-3.3.3.254",
@@ -1177,7 +1477,7 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				Pools: []v1beta1.IPAddressPool{
 					{
-						ObjectMeta: v1.ObjectMeta{Name: "pool1"},
+						ObjectMeta: metav1.ObjectMeta{Name: "pool1"},
 						Spec: v1beta1.IPAddressPoolSpec{
 							Addresses: []string{
 								"3.3.3.2-3.3.3.254",
@@ -1200,7 +1500,7 @@ func TestParse(t *testing.T) {
 				Pools: []v1beta1.IPAddressPool{testPool},
 				L2Advs: []v1beta1.L2Advertisement{
 					{
-						ObjectMeta: v1.ObjectMeta{Name: testAdvName},
+						ObjectMeta: metav1.ObjectMeta{Name: testAdvName},
 						Spec: v1beta1.L2AdvertisementSpec{
 							IPAddressPools: []string{testPoolName, testPoolName},
 						},
@@ -1214,7 +1514,7 @@ func TestParse(t *testing.T) {
 				Pools: []v1beta1.IPAddressPool{testPool},
 				BGPAdvs: []v1beta1.BGPAdvertisement{
 					{
-						ObjectMeta: v1.ObjectMeta{Name: testAdvName},
+						ObjectMeta: metav1.ObjectMeta{Name: testAdvName},
 						Spec: v1beta1.BGPAdvertisementSpec{
 							IPAddressPools: []string{testPoolName, testPoolName},
 						},
@@ -1228,7 +1528,7 @@ func TestParse(t *testing.T) {
 				Pools: []v1beta1.IPAddressPool{testPool},
 				Peers: []v1beta2.BGPPeer{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "peer1",
 						},
 						Spec: v1beta2.BGPPeerSpec{
@@ -1240,7 +1540,7 @@ func TestParse(t *testing.T) {
 				},
 				BGPAdvs: []v1beta1.BGPAdvertisement{
 					{
-						ObjectMeta: v1.ObjectMeta{Name: testAdvName},
+						ObjectMeta: metav1.ObjectMeta{Name: testAdvName},
 						Spec: v1beta1.BGPAdvertisementSpec{
 							IPAddressPools: []string{testPoolName},
 							Peers:          []string{"peer1", "peer1"},
@@ -1255,7 +1555,7 @@ func TestParse(t *testing.T) {
 				Pools: []v1beta1.IPAddressPool{testPool},
 				BGPAdvs: []v1beta1.BGPAdvertisement{
 					{
-						ObjectMeta: v1.ObjectMeta{Name: testAdvName},
+						ObjectMeta: metav1.ObjectMeta{Name: testAdvName},
 						Spec: v1beta1.BGPAdvertisementSpec{
 							Communities:    []string{"1234"},
 							IPAddressPools: []string{testPoolName},
@@ -1270,7 +1570,7 @@ func TestParse(t *testing.T) {
 				Pools: []v1beta1.IPAddressPool{testPool},
 				BGPAdvs: []v1beta1.BGPAdvertisement{
 					{
-						ObjectMeta: v1.ObjectMeta{Name: testAdvName},
+						ObjectMeta: metav1.ObjectMeta{Name: testAdvName},
 						Spec: v1beta1.BGPAdvertisementSpec{
 							Communities:    []string{"99999999:1"},
 							IPAddressPools: []string{testPoolName},
@@ -1285,7 +1585,7 @@ func TestParse(t *testing.T) {
 				Pools: []v1beta1.IPAddressPool{testPool},
 				BGPAdvs: []v1beta1.BGPAdvertisement{
 					{
-						ObjectMeta: v1.ObjectMeta{Name: testAdvName},
+						ObjectMeta: metav1.ObjectMeta{Name: testAdvName},
 						Spec: v1beta1.BGPAdvertisementSpec{
 							Communities:    []string{"1:99999999"},
 							IPAddressPools: []string{testPoolName},
@@ -1300,7 +1600,7 @@ func TestParse(t *testing.T) {
 				Pools: []v1beta1.IPAddressPool{testPool},
 				BGPAdvs: []v1beta1.BGPAdvertisement{
 					{
-						ObjectMeta: v1.ObjectMeta{Name: testAdvName},
+						ObjectMeta: metav1.ObjectMeta{Name: testAdvName},
 						Spec: v1beta1.BGPAdvertisementSpec{
 							Communities:    []string{"community"},
 							IPAddressPools: []string{testPoolName},
@@ -1315,7 +1615,7 @@ func TestParse(t *testing.T) {
 				Pools: []v1beta1.IPAddressPool{testPool},
 				BGPAdvs: []v1beta1.BGPAdvertisement{
 					{
-						ObjectMeta: v1.ObjectMeta{Name: testAdvName},
+						ObjectMeta: metav1.ObjectMeta{Name: testAdvName},
 						Spec: v1beta1.BGPAdvertisementSpec{
 							Communities:    []string{"1234:5678", "1234:5678"},
 							IPAddressPools: []string{testPoolName},
@@ -1329,7 +1629,7 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				Communities: []v1beta1.Community{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "community",
 						},
 						Spec: v1beta1.CommunitySpec{
@@ -1349,7 +1649,7 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				Communities: []v1beta1.Community{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "community",
 						},
 						Spec: v1beta1.CommunitySpec{
@@ -1369,7 +1669,7 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				Communities: []v1beta1.Community{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "community",
 						},
 						Spec: v1beta1.CommunitySpec{
@@ -1389,7 +1689,7 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				Communities: []v1beta1.Community{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "community1",
 						},
 						Spec: v1beta1.CommunitySpec{
@@ -1402,7 +1702,7 @@ func TestParse(t *testing.T) {
 						},
 					},
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "community2",
 						},
 						Spec: v1beta1.CommunitySpec{
@@ -1422,7 +1722,7 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				Communities: []v1beta1.Community{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "community",
 						},
 						Spec: v1beta1.CommunitySpec{
@@ -1446,15 +1746,15 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				Pools: []v1beta1.IPAddressPool{
 					{
-						ObjectMeta: v1.ObjectMeta{Name: "pool1"},
+						ObjectMeta: metav1.ObjectMeta{Name: "pool1"},
 						Spec:       v1beta1.IPAddressPoolSpec{},
 					},
 					{
-						ObjectMeta: v1.ObjectMeta{Name: "pool2"},
+						ObjectMeta: metav1.ObjectMeta{Name: "pool2"},
 						Spec:       v1beta1.IPAddressPoolSpec{},
 					},
 					{
-						ObjectMeta: v1.ObjectMeta{Name: "pool1"},
+						ObjectMeta: metav1.ObjectMeta{Name: "pool1"},
 						Spec:       v1beta1.IPAddressPoolSpec{},
 					},
 				},
@@ -1465,7 +1765,7 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				Pools: []v1beta1.IPAddressPool{
 					{
-						ObjectMeta: v1.ObjectMeta{Name: "pool1"},
+						ObjectMeta: metav1.ObjectMeta{Name: "pool1"},
 						Spec: v1beta1.IPAddressPoolSpec{
 							Addresses: []string{
 								" 10.0.0.0/8",
@@ -1473,7 +1773,7 @@ func TestParse(t *testing.T) {
 						},
 					},
 					{
-						ObjectMeta: v1.ObjectMeta{Name: "pool2"},
+						ObjectMeta: metav1.ObjectMeta{Name: "pool2"},
 						Spec: v1beta1.IPAddressPoolSpec{
 							Addresses: []string{
 								" 10.0.0.0/8",
@@ -1488,7 +1788,7 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				Pools: []v1beta1.IPAddressPool{
 					{
-						ObjectMeta: v1.ObjectMeta{Name: "pool1"},
+						ObjectMeta: metav1.ObjectMeta{Name: "pool1"},
 						Spec: v1beta1.IPAddressPoolSpec{
 							Addresses: []string{
 								" 10.0.0.0/8",
@@ -1496,7 +1796,7 @@ func TestParse(t *testing.T) {
 						},
 					},
 					{
-						ObjectMeta: v1.ObjectMeta{Name: "pool2"},
+						ObjectMeta: metav1.ObjectMeta{Name: "pool2"},
 						Spec: v1beta1.IPAddressPoolSpec{
 							Addresses: []string{
 								"10.0.0.0/16",
@@ -1511,7 +1811,7 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				Peers: []v1beta2.BGPPeer{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "peer1",
 						},
 						Spec: v1beta2.BGPPeerSpec{
@@ -1524,7 +1824,7 @@ func TestParse(t *testing.T) {
 				},
 				Pools: []v1beta1.IPAddressPool{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "pool1",
 						},
 						Spec: v1beta1.IPAddressPoolSpec{
@@ -1536,14 +1836,14 @@ func TestParse(t *testing.T) {
 				},
 				BFDProfiles: []v1beta1.BFDProfile{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "default",
 						},
 					},
 				},
 				BGPAdvs: []v1beta1.BGPAdvertisement{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "adv3",
 						},
 					},
@@ -1617,7 +1917,7 @@ func TestParse(t *testing.T) {
 					},
 				},
 				PasswordSecrets: map[string]corev1.Secret{
-					"bgpsecret": {Type: corev1.SecretTypeOpaque, ObjectMeta: v1.ObjectMeta{Name: "bgpsecret", Namespace: "metallb-system"}},
+					"bgpsecret": {Type: corev1.SecretTypeOpaque, ObjectMeta: metav1.ObjectMeta{Name: "bgpsecret", Namespace: "metallb-system"}},
 				},
 			},
 		},
@@ -1636,7 +1936,7 @@ func TestParse(t *testing.T) {
 					},
 				},
 				PasswordSecrets: map[string]corev1.Secret{
-					"bgpsecret": {Type: corev1.SecretTypeBasicAuth, ObjectMeta: v1.ObjectMeta{Name: "bgpsecret", Namespace: "metallb-system"}},
+					"bgpsecret": {Type: corev1.SecretTypeBasicAuth, ObjectMeta: metav1.ObjectMeta{Name: "bgpsecret", Namespace: "metallb-system"}},
 				},
 			},
 		},
@@ -1645,7 +1945,7 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				Peers: []v1beta2.BGPPeer{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "peer1",
 						},
 						Spec: v1beta2.BGPPeerSpec{
@@ -1659,8 +1959,8 @@ func TestParse(t *testing.T) {
 					},
 				},
 				PasswordSecrets: map[string]corev1.Secret{
-					"bgpsecret": {Type: corev1.SecretTypeBasicAuth, ObjectMeta: v1.ObjectMeta{Name: "bgpsecret", Namespace: "metallb-system"},
-						Data: map[string][]byte{"password": []byte([]byte("nopass"))}},
+					"bgpsecret": {Type: corev1.SecretTypeBasicAuth, ObjectMeta: metav1.ObjectMeta{Name: "bgpsecret", Namespace: "metallb-system"},
+						Data: map[string][]byte{"password": []byte("nopass")}},
 				},
 			},
 			want: &Config{
@@ -1713,7 +2013,7 @@ func TestParse(t *testing.T) {
 				},
 				Pools: []v1beta1.IPAddressPool{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "pool1",
 						},
 						Spec: v1beta1.IPAddressPoolSpec{
@@ -1725,7 +2025,7 @@ func TestParse(t *testing.T) {
 				},
 				BGPAdvs: []v1beta1.BGPAdvertisement{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "adv3",
 						},
 					},
@@ -1737,7 +2037,7 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				Pools: []v1beta1.IPAddressPool{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "pool1",
 						},
 						Spec: v1beta1.IPAddressPoolSpec{
@@ -1749,17 +2049,17 @@ func TestParse(t *testing.T) {
 				},
 				BFDProfiles: []v1beta1.BFDProfile{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "default",
 						},
 					},
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "foo",
 						},
 					},
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "foo",
 						},
 					},
@@ -1771,7 +2071,7 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				Pools: []v1beta1.IPAddressPool{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "pool1",
 						},
 						Spec: v1beta1.IPAddressPoolSpec{
@@ -1783,7 +2083,7 @@ func TestParse(t *testing.T) {
 				},
 				BFDProfiles: []v1beta1.BFDProfile{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "nondefault",
 						},
 						Spec: v1beta1.BFDProfileSpec{
@@ -1799,7 +2099,7 @@ func TestParse(t *testing.T) {
 				},
 				BGPAdvs: []v1beta1.BGPAdvertisement{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "adv3",
 						},
 					},
@@ -1843,7 +2143,7 @@ func TestParse(t *testing.T) {
 
 				BFDProfiles: []v1beta1.BFDProfile{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "default",
 						},
 						Spec: v1beta1.BFDProfileSpec{
@@ -1859,7 +2159,7 @@ func TestParse(t *testing.T) {
 
 				BFDProfiles: []v1beta1.BFDProfile{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "default",
 						},
 						Spec: v1beta1.BFDProfileSpec{
@@ -1874,7 +2174,7 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				Pools: []v1beta1.IPAddressPool{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "pool1",
 						},
 						Spec: v1beta1.IPAddressPoolSpec{
@@ -1886,7 +2186,7 @@ func TestParse(t *testing.T) {
 				},
 				BFDProfiles: []v1beta1.BFDProfile{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "nondefault",
 						},
 						Spec: v1beta1.BFDProfileSpec{
@@ -1902,14 +2202,14 @@ func TestParse(t *testing.T) {
 				},
 				BGPAdvs: []v1beta1.BGPAdvertisement{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "adv3",
 						},
 					},
 				},
 				Peers: []v1beta2.BGPPeer{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "peer1",
 						},
 						Spec: v1beta2.BGPPeerSpec{
@@ -1917,7 +2217,7 @@ func TestParse(t *testing.T) {
 							ASN:          142,
 							Address:      "1.2.3.4",
 							Port:         1179,
-							HoldTime:     v1.Duration{Duration: 180 * time.Second},
+							HoldTime:     metav1.Duration{Duration: 180 * time.Second},
 							RouterID:     "10.20.30.40",
 							SrcAddress:   "10.20.30.40",
 							EBGPMultiHop: true,
@@ -1932,7 +2232,7 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				Pools: []v1beta1.IPAddressPool{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "pool1",
 						},
 						Spec: v1beta1.IPAddressPoolSpec{
@@ -1944,7 +2244,7 @@ func TestParse(t *testing.T) {
 				},
 				BFDProfiles: []v1beta1.BFDProfile{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "with-echo",
 						},
 						Spec: v1beta1.BFDProfileSpec{
@@ -1954,14 +2254,14 @@ func TestParse(t *testing.T) {
 				},
 				BGPAdvs: []v1beta1.BGPAdvertisement{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "adv",
 						},
 					},
 				},
 				Peers: []v1beta2.BGPPeer{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "peer1",
 						},
 						Spec: v1beta2.BGPPeerSpec{
@@ -2016,7 +2316,7 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				Peers: []v1beta2.BGPPeer{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "peer1",
 						},
 						Spec: v1beta2.BGPPeerSpec{
@@ -2024,7 +2324,7 @@ func TestParse(t *testing.T) {
 							ASN:          142,
 							Address:      "1.2.3.4",
 							Port:         1179,
-							HoldTime:     v1.Duration{Duration: 180 * time.Second},
+							HoldTime:     metav1.Duration{Duration: 180 * time.Second},
 							RouterID:     "10.20.30.40",
 							SrcAddress:   "10.20.30.40",
 							EBGPMultiHop: true,
@@ -2033,7 +2333,7 @@ func TestParse(t *testing.T) {
 				},
 				Pools: []v1beta1.IPAddressPool{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "pool1",
 						},
 						Spec: v1beta1.IPAddressPoolSpec{
@@ -2048,7 +2348,7 @@ func TestParse(t *testing.T) {
 				},
 				LegacyAddressPools: []v1beta1.AddressPool{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "legacyl2pool1",
 						},
 						Spec: v1beta1.AddressPoolSpec{
@@ -2061,7 +2361,7 @@ func TestParse(t *testing.T) {
 						},
 					},
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "legacybgppool1",
 						},
 						Spec: v1beta1.AddressPoolSpec{
@@ -2083,7 +2383,7 @@ func TestParse(t *testing.T) {
 				},
 				BGPAdvs: []v1beta1.BGPAdvertisement{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "adv1",
 						},
 						Spec: v1beta1.BGPAdvertisementSpec{
@@ -2163,7 +2463,7 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				LegacyAddressPools: []v1beta1.AddressPool{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "legacybgppool1",
 						},
 						Spec: v1beta1.AddressPoolSpec{
@@ -2185,7 +2485,7 @@ func TestParse(t *testing.T) {
 				},
 				Communities: []v1beta1.Community{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "community",
 						},
 						Spec: v1beta1.CommunitySpec{
@@ -2226,7 +2526,7 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				Pools: []v1beta1.IPAddressPool{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "pool1",
 						},
 						Spec: v1beta1.IPAddressPoolSpec{
@@ -2241,7 +2541,7 @@ func TestParse(t *testing.T) {
 				},
 				LegacyAddressPools: []v1beta1.AddressPool{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "legacyl2pool1",
 						},
 						Spec: v1beta1.AddressPoolSpec{
@@ -2254,7 +2554,7 @@ func TestParse(t *testing.T) {
 						},
 					},
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "legacybgppool1",
 						},
 						Spec: v1beta1.AddressPoolSpec{
@@ -2273,7 +2573,7 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				Pools: []v1beta1.IPAddressPool{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name:   "pool1",
 							Labels: map[string]string{"test": "pool1"},
 						},
@@ -2284,7 +2584,7 @@ func TestParse(t *testing.T) {
 						},
 					},
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name:   "pool2",
 							Labels: map[string]string{"test": "pool2"},
 						},
@@ -2297,7 +2597,7 @@ func TestParse(t *testing.T) {
 				},
 				L2Advs: []v1beta1.L2Advertisement{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "l2adv1",
 						},
 						Spec: v1beta1.L2AdvertisementSpec{
@@ -2313,7 +2613,7 @@ func TestParse(t *testing.T) {
 				},
 				BGPAdvs: []v1beta1.BGPAdvertisement{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "adv1",
 						},
 						Spec: v1beta1.BGPAdvertisementSpec{
@@ -2329,7 +2629,7 @@ func TestParse(t *testing.T) {
 						},
 					},
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "adv2",
 						},
 						Spec: v1beta1.BGPAdvertisementSpec{
@@ -2393,7 +2693,7 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				Pools: []v1beta1.IPAddressPool{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name:   "pool1",
 							Labels: map[string]string{"test": "pool1"},
 						},
@@ -2406,7 +2706,7 @@ func TestParse(t *testing.T) {
 				},
 				L2Advs: []v1beta1.L2Advertisement{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "l2adv1",
 						},
 						Spec: v1beta1.L2AdvertisementSpec{
@@ -2444,7 +2744,7 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				Pools: []v1beta1.IPAddressPool{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name:   "pool1",
 							Labels: map[string]string{"test": "pool1"},
 						},
@@ -2457,7 +2757,7 @@ func TestParse(t *testing.T) {
 				},
 				BGPAdvs: []v1beta1.BGPAdvertisement{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "adv1",
 						},
 						Spec: v1beta1.BGPAdvertisementSpec{
@@ -2485,7 +2785,7 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				Pools: []v1beta1.IPAddressPool{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name:   "pool1",
 							Labels: map[string]string{"test": "pool1"},
 						},
@@ -2498,7 +2798,7 @@ func TestParse(t *testing.T) {
 				},
 				BGPAdvs: []v1beta1.BGPAdvertisement{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "adv1",
 						},
 						Spec: v1beta1.BGPAdvertisementSpec{
@@ -2525,7 +2825,7 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				Pools: []v1beta1.IPAddressPool{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name:   "pool1",
 							Labels: map[string]string{"test": "pool1"},
 						},
@@ -2538,7 +2838,7 @@ func TestParse(t *testing.T) {
 				},
 				L2Advs: []v1beta1.L2Advertisement{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "adv1",
 						},
 						Spec: v1beta1.L2AdvertisementSpec{
@@ -2564,7 +2864,7 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				Pools: []v1beta1.IPAddressPool{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name:   "pool1",
 							Labels: map[string]string{"test": "pool1"},
 						},
@@ -2575,7 +2875,7 @@ func TestParse(t *testing.T) {
 						},
 					},
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name:   "pool2",
 							Labels: map[string]string{"test": "pool2"},
 						},
@@ -2588,7 +2888,7 @@ func TestParse(t *testing.T) {
 				},
 				L2Advs: []v1beta1.L2Advertisement{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "l2adv1",
 						},
 						Spec: v1beta1.L2AdvertisementSpec{
@@ -2604,7 +2904,7 @@ func TestParse(t *testing.T) {
 				},
 				BGPAdvs: []v1beta1.BGPAdvertisement{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "adv1",
 						},
 						Spec: v1beta1.BGPAdvertisementSpec{
@@ -2620,7 +2920,7 @@ func TestParse(t *testing.T) {
 						},
 					},
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "adv2",
 						},
 						Spec: v1beta1.BGPAdvertisementSpec{
@@ -2663,7 +2963,7 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				Pools: []v1beta1.IPAddressPool{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "pool1",
 						},
 						Spec: v1beta1.IPAddressPoolSpec{
@@ -2673,7 +2973,7 @@ func TestParse(t *testing.T) {
 						},
 					},
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "pool2",
 						},
 						Spec: v1beta1.IPAddressPoolSpec{
@@ -2685,7 +2985,7 @@ func TestParse(t *testing.T) {
 				},
 				BGPAdvs: []v1beta1.BGPAdvertisement{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "adv1",
 						},
 						Spec: v1beta1.BGPAdvertisementSpec{
@@ -2700,7 +3000,7 @@ func TestParse(t *testing.T) {
 						},
 					},
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "adv2",
 						},
 						Spec: v1beta1.BGPAdvertisementSpec{
@@ -2717,7 +3017,7 @@ func TestParse(t *testing.T) {
 				},
 				L2Advs: []v1beta1.L2Advertisement{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "l2adv1",
 						},
 						Spec: v1beta1.L2AdvertisementSpec{
@@ -2734,7 +3034,7 @@ func TestParse(t *testing.T) {
 				},
 				LegacyAddressPools: []v1beta1.AddressPool{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "legacyl2pool1",
 						},
 						Spec: v1beta1.AddressPoolSpec{
@@ -2747,7 +3047,7 @@ func TestParse(t *testing.T) {
 						},
 					},
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "legacybgppool1",
 						},
 						Spec: v1beta1.AddressPoolSpec{
@@ -2821,7 +3121,7 @@ func TestParse(t *testing.T) {
 								Nodes:               map[string]bool{"second": true},
 							},
 						},
-						L2Advertisements: []*L2Advertisement{&L2Advertisement{
+						L2Advertisements: []*L2Advertisement{{
 							Nodes: map[string]bool{
 								"first": true,
 							},
@@ -2853,7 +3153,7 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				Pools: []v1beta1.IPAddressPool{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "pool1",
 						},
 						Spec: v1beta1.IPAddressPoolSpec{
@@ -2865,7 +3165,7 @@ func TestParse(t *testing.T) {
 				},
 				BGPAdvs: []v1beta1.BGPAdvertisement{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "adv1",
 						},
 						Spec: v1beta1.BGPAdvertisementSpec{
@@ -2887,7 +3187,7 @@ func TestParse(t *testing.T) {
 				},
 				L2Advs: []v1beta1.L2Advertisement{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "l2adv1",
 						},
 						Spec: v1beta1.L2AdvertisementSpec{
@@ -2931,7 +3231,7 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				Pools: []v1beta1.IPAddressPool{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "pool1",
 						},
 						Spec: v1beta1.IPAddressPoolSpec{
@@ -2943,7 +3243,7 @@ func TestParse(t *testing.T) {
 				},
 				BGPAdvs: []v1beta1.BGPAdvertisement{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "adv1",
 						},
 						Spec: v1beta1.BGPAdvertisementSpec{
@@ -2969,7 +3269,7 @@ func TestParse(t *testing.T) {
 				},
 				L2Advs: []v1beta1.L2Advertisement{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "l2adv1",
 						},
 						Spec: v1beta1.L2AdvertisementSpec{
@@ -3012,7 +3312,7 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				Pools: []v1beta1.IPAddressPool{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "pool1",
 						},
 						Spec: v1beta1.IPAddressPoolSpec{
@@ -3024,14 +3324,14 @@ func TestParse(t *testing.T) {
 				},
 				BGPAdvs: []v1beta1.BGPAdvertisement{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "adv1",
 						},
 					},
 				},
 				L2Advs: []v1beta1.L2Advertisement{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "l2adv1",
 						},
 					},
@@ -3072,7 +3372,7 @@ func TestParse(t *testing.T) {
 								},
 							},
 						},
-						L2Advertisements: []*L2Advertisement{&L2Advertisement{
+						L2Advertisements: []*L2Advertisement{{
 							Nodes: map[string]bool{
 								"first":  true,
 								"second": true,
@@ -3090,7 +3390,7 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				Pools: []v1beta1.IPAddressPool{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "pool1",
 						},
 						Spec: v1beta1.IPAddressPoolSpec{
@@ -3102,7 +3402,7 @@ func TestParse(t *testing.T) {
 				},
 				Peers: []v1beta2.BGPPeer{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "peer1",
 						},
 						Spec: v1beta2.BGPPeerSpec{
@@ -3114,7 +3414,7 @@ func TestParse(t *testing.T) {
 				},
 				BGPAdvs: []v1beta1.BGPAdvertisement{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "adv1",
 						},
 						Spec: v1beta1.BGPAdvertisementSpec{
@@ -3165,7 +3465,7 @@ func TestParse(t *testing.T) {
 			crs: ClusterResources{
 				LegacyAddressPools: []v1beta1.AddressPool{
 					{
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "legacybgppool1",
 						},
 						Spec: v1beta1.AddressPoolSpec{
@@ -3240,7 +3540,7 @@ func TestContainsAdvertisement(t *testing.T) {
 		{
 			desc: "Contain",
 			advs: []*L2Advertisement{
-				&L2Advertisement{
+				{
 					Nodes: map[string]bool{
 						"nodeA": true,
 						"nodeB": true,
@@ -3248,7 +3548,7 @@ func TestContainsAdvertisement(t *testing.T) {
 					Interfaces:    []string{"eth0", "eth1"},
 					AllInterfaces: false,
 				},
-				&L2Advertisement{
+				{
 					Nodes: map[string]bool{
 						"nodeB": true,
 					},
@@ -3269,7 +3569,7 @@ func TestContainsAdvertisement(t *testing.T) {
 		{
 			desc: "Not contain: Nodes don't equal",
 			advs: []*L2Advertisement{
-				&L2Advertisement{
+				{
 					Nodes: map[string]bool{
 						"nodeA": true,
 						"nodeB": true,
@@ -3291,7 +3591,7 @@ func TestContainsAdvertisement(t *testing.T) {
 		{
 			desc: "Not contain: Interfaces don't equal",
 			advs: []*L2Advertisement{
-				&L2Advertisement{
+				{
 					Nodes: map[string]bool{
 						"nodeA": true,
 						"nodeB": true,
@@ -3313,7 +3613,7 @@ func TestContainsAdvertisement(t *testing.T) {
 		{
 			desc: "Not contain: AllInterfaces doesn't equal",
 			advs: []*L2Advertisement{
-				&L2Advertisement{
+				{
 					Nodes: map[string]bool{
 						"nodeA": true,
 						"nodeB": true,

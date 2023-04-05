@@ -107,7 +107,12 @@ type bgp struct {
 	frrCli vtysh.Cli
 }
 
-func NewBGP(l log.Logger) *bgp {
+func NewBGP(l log.Logger) prometheus.Collector {
+	log := log.With(l, "collector", bgpmetrics.Subsystem)
+	return &bgp{Log: log, frrCli: vtysh.Run}
+}
+
+func mocknewBGP(l log.Logger) *bgp {
 	log := log.With(l, "collector", bgpmetrics.Subsystem)
 	return &bgp{Log: log, frrCli: vtysh.Run}
 }
@@ -144,7 +149,7 @@ func updateNeighborsMetrics(ch chan<- prometheus.Metric, neighbors map[string][]
 			if !n.Connected {
 				sessionUp = 0
 			}
-			peerLabel := fmt.Sprintf("%s:%d", n.Ip.String(), n.Port)
+			peerLabel := fmt.Sprintf("%s:%d", n.IP.String(), n.Port)
 
 			ch <- prometheus.MustNewConstMetric(sessionUpDesc, prometheus.GaugeValue, float64(sessionUp), peerLabel, vrf)
 			ch <- prometheus.MustNewConstMetric(prefixesDesc, prometheus.GaugeValue, float64(n.PrefixSent), peerLabel, vrf)
@@ -179,7 +184,6 @@ func getBGPNeighbors(frrCli vtysh.Cli) (map[string][]*bgpfrr.Neighbor, error) {
 			return nil, err
 		}
 		neighbors[vrf] = neighborsPerVRF
-
 	}
 	return neighbors, nil
 }

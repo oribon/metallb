@@ -15,14 +15,24 @@ import (
 	"go.universe.tf/metallb/e2etest/pkg/service"
 	internalconfig "go.universe.tf/metallb/internal/config"
 
-	testservice "go.universe.tf/metallb/e2etest/pkg/service"
-	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/test/e2e/framework"
 	e2eservice "k8s.io/kubernetes/test/e2e/framework/service"
 	admissionapi "k8s.io/pod-security-admission/api"
+)
+
+const secondNamespace = "test-namespace"
+
+var (
+	firstNsLabels = map[string]string{
+		"first-ns": "true",
+	}
+	secondNsLabels = map[string]string{
+		"second-ns":                    "true",
+		admissionapi.EnforceLevelLabel: string(admissionapi.LevelPrivileged),
+	}
 )
 
 var _ = ginkgo.Describe("IP Assignment", func() {
@@ -37,6 +47,8 @@ var _ = ginkgo.Describe("IP Assignment", func() {
 		// Clean previous configuration.
 		err := ConfigUpdater.Clean()
 		framework.ExpectNoError(err)
+		err = k8s.DeleteNamespace(cs, secondNamespace)
+		framework.ExpectNoError(err)
 	})
 
 	f = framework.NewDefaultFramework("assignment")
@@ -48,6 +60,15 @@ var _ = ginkgo.Describe("IP Assignment", func() {
 		ginkgo.By("Clearing any previous configuration")
 		err := ConfigUpdater.Clean()
 		framework.ExpectNoError(err)
+
+		ginkgo.By("Updating the first namespace labels")
+		err = k8s.ApplyLabelsToNamespace(cs, f.Namespace.Name, firstNsLabels)
+		framework.ExpectNoError(err)
+
+		ginkgo.By("Creating a second namespace")
+		err = k8s.CreateNamespace(cs, secondNamespace, secondNsLabels)
+		framework.ExpectNoError(err)
+
 	})
 
 	ginkgo.Context("IPV4 Assignment", func() {
@@ -83,7 +104,7 @@ var _ = ginkgo.Describe("IP Assignment", func() {
 			})
 			framework.ExpectNoError(err)
 			defer func() {
-				testservice.Delete(cs, svc1)
+				service.Delete(cs, svc1)
 			}()
 
 			gomega.Consistently(func() int {
@@ -164,13 +185,13 @@ var _ = ginkgo.Describe("IP Assignment", func() {
 			err := ConfigUpdater.Update(resources)
 			framework.ExpectNoError(err)
 
-			svc1, _ := testservice.CreateWithBackend(cs, f.Namespace.Name, "svc-test-ns-pool-1")
-			svc2, _ := testservice.CreateWithBackend(cs, f.Namespace.Name, "svc-test-ns-pool-2")
-			svc3, _ := testservice.CreateWithBackend(cs, f.Namespace.Name, "svc-test-ns-pool-3")
+			svc1, _ := service.CreateWithBackend(cs, f.Namespace.Name, "svc-test-ns-pool-1")
+			svc2, _ := service.CreateWithBackend(cs, f.Namespace.Name, "svc-test-ns-pool-2")
+			svc3, _ := service.CreateWithBackend(cs, f.Namespace.Name, "svc-test-ns-pool-3")
 			defer func() {
-				testservice.Delete(cs, svc1)
-				testservice.Delete(cs, svc2)
-				testservice.Delete(cs, svc3)
+				service.Delete(cs, svc1)
+				service.Delete(cs, svc2)
+				service.Delete(cs, svc3)
 			}()
 
 			// The createWithBackend method always wait for service to acquire an ingress IP, so
@@ -232,13 +253,13 @@ var _ = ginkgo.Describe("IP Assignment", func() {
 			err = ConfigUpdater.Update(resources)
 			framework.ExpectNoError(err)
 
-			svc1, _ := testservice.CreateWithBackend(cs, f.Namespace.Name, "svc-test-ns-label-pool-1")
-			svc2, _ := testservice.CreateWithBackend(cs, f.Namespace.Name, "svc-test-ns-label-pool-2")
-			svc3, _ := testservice.CreateWithBackend(cs, f.Namespace.Name, "svc-test-ns-label-pool-3")
+			svc1, _ := service.CreateWithBackend(cs, f.Namespace.Name, "svc-test-ns-label-pool-1")
+			svc2, _ := service.CreateWithBackend(cs, f.Namespace.Name, "svc-test-ns-label-pool-2")
+			svc3, _ := service.CreateWithBackend(cs, f.Namespace.Name, "svc-test-ns-label-pool-3")
 			defer func() {
-				testservice.Delete(cs, svc1)
-				testservice.Delete(cs, svc2)
-				testservice.Delete(cs, svc3)
+				service.Delete(cs, svc1)
+				service.Delete(cs, svc2)
+				service.Delete(cs, svc3)
 			}()
 
 			// The createWithBackend method always wait for service to acquire an ingress IP, so
@@ -295,19 +316,19 @@ var _ = ginkgo.Describe("IP Assignment", func() {
 			err := ConfigUpdater.Update(resources)
 			framework.ExpectNoError(err)
 
-			svcTweakWithLabel := func(svc *corev1.Service) {
+			svcTweakWithLabel := func(svc *v1.Service) {
 				if svc.Labels == nil {
 					svc.Labels = make(map[string]string)
 				}
 				svc.Labels["test"] = "e2e"
 			}
-			svc1, _ := testservice.CreateWithBackend(cs, f.Namespace.Name, "svc-test-svc-label-pool-1", svcTweakWithLabel)
-			svc2, _ := testservice.CreateWithBackend(cs, f.Namespace.Name, "svc-test-svc-label-pool-2", svcTweakWithLabel)
-			svc3, _ := testservice.CreateWithBackend(cs, f.Namespace.Name, "svc-test-svc-label-pool-3", svcTweakWithLabel)
+			svc1, _ := service.CreateWithBackend(cs, f.Namespace.Name, "svc-test-svc-label-pool-1", svcTweakWithLabel)
+			svc2, _ := service.CreateWithBackend(cs, f.Namespace.Name, "svc-test-svc-label-pool-2", svcTweakWithLabel)
+			svc3, _ := service.CreateWithBackend(cs, f.Namespace.Name, "svc-test-svc-label-pool-3", svcTweakWithLabel)
 			defer func() {
-				testservice.Delete(cs, svc1)
-				testservice.Delete(cs, svc2)
-				testservice.Delete(cs, svc3)
+				service.Delete(cs, svc1)
+				service.Delete(cs, svc2)
+				service.Delete(cs, svc3)
 			}()
 
 			// The createWithBackend method always wait for service to acquire an ingress IP, so
@@ -363,19 +384,19 @@ var _ = ginkgo.Describe("IP Assignment", func() {
 			err := ConfigUpdater.Update(resources)
 			framework.ExpectNoError(err)
 
-			svcTweakWithLabel := func(svc *corev1.Service) {
+			svcTweakWithLabel := func(svc *v1.Service) {
 				if svc.Labels == nil {
 					svc.Labels = make(map[string]string)
 				}
 				svc.Labels["test"] = "e2e"
 			}
-			svc1, _ := testservice.CreateWithBackend(cs, f.Namespace.Name, "svc-ns-svc-label-pool-1", svcTweakWithLabel)
-			svc2, _ := testservice.CreateWithBackend(cs, f.Namespace.Name, "svc-ns-svc-label-pool-2", svcTweakWithLabel)
-			svc3, _ := testservice.CreateWithBackend(cs, f.Namespace.Name, "svc-ns-svc-label-pool-3", svcTweakWithLabel)
+			svc1, _ := service.CreateWithBackend(cs, f.Namespace.Name, "svc-ns-svc-label-pool-1", svcTweakWithLabel)
+			svc2, _ := service.CreateWithBackend(cs, f.Namespace.Name, "svc-ns-svc-label-pool-2", svcTweakWithLabel)
+			svc3, _ := service.CreateWithBackend(cs, f.Namespace.Name, "svc-ns-svc-label-pool-3", svcTweakWithLabel)
 			defer func() {
-				testservice.Delete(cs, svc1)
-				testservice.Delete(cs, svc2)
-				testservice.Delete(cs, svc3)
+				service.Delete(cs, svc1)
+				service.Delete(cs, svc2)
+				service.Delete(cs, svc3)
 			}()
 
 			// The createWithBackend method always wait for service to acquire an ingress IP, so
@@ -391,6 +412,67 @@ var _ = ginkgo.Describe("IP Assignment", func() {
 			framework.ExpectNoError(err)
 			ginkgo.By("validate LoadBalancer IP is allocated from default address pool")
 			err = config.ValidateIPInRange([]metallbv1beta1.IPAddressPool{namespacePoolNoPriority}, e2eservice.GetIngressPoint(
+				&svc3.Status.LoadBalancer.Ingress[0]))
+			framework.ExpectNoError(err)
+		})
+
+		ginkgo.It("with namespace with labels", func() {
+			firstNamespacePool := metallbv1beta1.IPAddressPool{
+				ObjectMeta: metav1.ObjectMeta{Name: "first-ns-labels-ip-pool"},
+				Spec: metallbv1beta1.IPAddressPoolSpec{
+					Addresses: []string{
+						"192.168.20.0/32",
+					},
+					AllocateTo: &metallbv1beta1.ServiceAllocation{Priority: 10, NamespaceSelectors: []metav1.LabelSelector{{MatchLabels: firstNsLabels}}},
+				},
+			}
+			secondNamespacePool := metallbv1beta1.IPAddressPool{
+				ObjectMeta: metav1.ObjectMeta{Name: "second-ns-labels-ip-pool"},
+				Spec: metallbv1beta1.IPAddressPoolSpec{
+					Addresses: []string{
+						"192.168.30.0/32",
+					},
+					AllocateTo: &metallbv1beta1.ServiceAllocation{Priority: 10, NamespaceSelectors: []metav1.LabelSelector{{MatchLabels: secondNsLabels}}},
+				},
+			}
+
+			noNamespacePool := metallbv1beta1.IPAddressPool{
+				ObjectMeta: metav1.ObjectMeta{Name: "no-ns-labels-ip-pool"},
+				Spec: metallbv1beta1.IPAddressPoolSpec{
+					Addresses: []string{
+						"192.168.40.0/32",
+					},
+				},
+			}
+
+			resources := internalconfig.ClusterResources{
+				Pools: []metallbv1beta1.IPAddressPool{firstNamespacePool, secondNamespacePool, noNamespacePool},
+			}
+			err := ConfigUpdater.Update(resources)
+			framework.ExpectNoError(err)
+
+			svc1, _ := service.CreateWithBackend(cs, secondNamespace, "second-ns-service")
+			svc2, _ := service.CreateWithBackend(cs, f.Namespace.Name, "default-ns-service")
+			svc3, _ := service.CreateWithBackend(cs, f.Namespace.Name, "default-ns-service2")
+			defer func() {
+				service.Delete(cs, svc1)
+				service.Delete(cs, svc2)
+				service.Delete(cs, svc3)
+			}()
+
+			// The createWithBackend method always wait for service to acquire an ingress IP, so
+			// just validate service ingress ip address are assigned from appropriate ip
+			// address pool.
+			ginkgo.By("validate LoadBalancer IP is allocated from 1st higher priority address pool")
+			err = config.ValidateIPInRange([]metallbv1beta1.IPAddressPool{secondNamespacePool}, e2eservice.GetIngressPoint(
+				&svc1.Status.LoadBalancer.Ingress[0]))
+			framework.ExpectNoError(err)
+			ginkgo.By("validate LoadBalancer IP is allocated from 2nd higher priority address pool")
+			err = config.ValidateIPInRange([]metallbv1beta1.IPAddressPool{firstNamespacePool}, e2eservice.GetIngressPoint(
+				&svc2.Status.LoadBalancer.Ingress[0]))
+			framework.ExpectNoError(err)
+			ginkgo.By("validate LoadBalancer IP is allocated from default address pool")
+			err = config.ValidateIPInRange([]metallbv1beta1.IPAddressPool{noNamespacePool}, e2eservice.GetIngressPoint(
 				&svc3.Status.LoadBalancer.Ingress[0]))
 			framework.ExpectNoError(err)
 		})

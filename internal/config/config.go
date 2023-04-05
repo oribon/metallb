@@ -32,6 +32,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/utils/strings/slices"
 )
 
 type ClusterResources struct {
@@ -45,6 +46,7 @@ type ClusterResources struct {
 	PasswordSecrets    map[string]corev1.Secret          `json:"passwordsecrets"`
 	Nodes              []corev1.Node                     `json:"nodes"`
 	Namespaces         []corev1.Namespace                `json:"namespaces"`
+	BGPExtras          corev1.ConfigMap                  `json:"bgpextras"`
 }
 
 // Config is a parsed MetalLB configuration.
@@ -55,6 +57,8 @@ type Config struct {
 	Pools *Pools
 	// BFD profiles that can be used by peers.
 	BFDProfiles map[string]*BFDProfile
+	// Protocol dependent extra config. Currently used only by FRR
+	BGPExtras string
 }
 
 // Pools contains address pools and its namespace/service specific allocations.
@@ -75,6 +79,8 @@ const (
 	BGP    Proto = "bgp"
 	Layer2 Proto = "layer2"
 )
+
+const bgpExtrasField = "extras"
 
 var Protocols = []Proto{
 	BGP, Layer2,
@@ -226,6 +232,11 @@ func For(resources ClusterResources, validate Validate) (*Config, error) {
 		return nil, err
 	}
 
+	cfg.BGPExtras = bgpExtrasFor(resources)
+	if err != nil {
+		return nil, err
+	}
+
 	err = validateConfig(cfg)
 	if err != nil {
 		return nil, err
@@ -249,7 +260,7 @@ func bfdProfilesFor(resources ClusterResources) (map[string]*BFDProfile, error) 
 }
 
 func peersFor(resources ClusterResources, BFDProfiles map[string]*BFDProfile) (map[string]*Peer, error) {
-	var res map[string]*Peer = make(map[string]*Peer)
+	var res = make(map[string]*Peer)
 	for _, p := range resources.Peers {
 		peer, err := peerFromCR(p, resources.PasswordSecrets)
 		if err != nil {
@@ -349,6 +360,13 @@ func poolsFor(resources ClusterResources) (*Pools, error) {
 	}
 	return &Pools{ByName: pools, ByNamespace: poolsByNamespace(pools),
 		ByServiceSelector: poolsByServiceSelector(pools)}, nil
+}
+
+func bgpExtrasFor(resources ClusterResources) string {
+	if resources.BGPExtras.Data == nil {
+		return ""
+	}
+	return resources.BGPExtras.Data[bgpExtrasField]
 }
 
 func communitiesFromCrs(cs []metallbv1beta1.Community) (map[string]uint32, error) {
@@ -917,13 +935,13 @@ func getCommunityValue(community string, communities map[string]uint32) (uint32,
 	}
 
 	v, err := ParseCommunity(community)
-	if errors.Is(err, invalidCommunityValue) {
+	if errors.Is(err, errInvalidaCommunityValue) {
 		return 0, err
 	}
 
 	// Return TransientError on invalidCommunityFormat, in case it refers
 	// a Community resource that doesn't exist yet.
-	if errors.Is(err, invalidCommunityFormat) {
+	if errors.Is(err, errInvalidCommunityFormat) {
 		return 0, TransientError{err.Error()}
 	}
 
@@ -956,24 +974,65 @@ func validateBGPAdvPerPool(adv *BGPAdvertisement, pool *Pool) error {
 				"this pool is more specific than the aggregation length for addresses %s", adv.AggregationLength, lowest, addr)
 		}
 	}
+
+	// Verify that BGP ADVs set a unique local preference value per BGP update.
+	for _, bgpAdv := range pool.BGPAdvertisements {
+		if adv.LocalPref != bgpAdv.LocalPref {
+			if !advertisementsAreCompatible(adv, bgpAdv) {
+				return fmt.Errorf("invalid local preference %d: local preferernce %d was "+
+					"already set for the same type of BGP update. Check existing BGP advertisements "+
+					"with common pools and aggregation lengths", adv.LocalPref, bgpAdv.LocalPref)
+			}
+		}
+	}
+
 	return nil
 }
 
-var invalidCommunityValue = errors.New("invalid community value")
-var invalidCommunityFormat = errors.New("invalid community format")
+func advertisementsAreCompatible(newAdv, adv *BGPAdvertisement) bool {
+	if adv.AggregationLength != newAdv.AggregationLength && adv.AggregationLengthV6 != newAdv.AggregationLengthV6 {
+		return true
+	}
+
+	// BGP ADVs with different set of BGP peers do not collide.
+	if len(newAdv.Peers) != 0 && len(adv.Peers) != 0 {
+		equalPeer := false
+		for _, peer := range newAdv.Peers {
+			if slices.Contains(adv.Peers, peer) {
+				equalPeer = true
+				break
+			}
+		}
+		if !equalPeer {
+			return true
+		}
+	}
+
+	// BGP ADVs with different set of nodes do not collide.
+	for node := range newAdv.Nodes {
+		if _, ok := adv.Nodes[node]; ok {
+			return false
+		}
+	}
+
+	return true
+}
+
+var errInvalidaCommunityValue = errors.New("invalid community value")
+var errInvalidCommunityFormat = errors.New("invalid community format")
 
 func ParseCommunity(c string) (uint32, error) {
 	fs := strings.Split(c, ":")
 	if len(fs) != 2 {
-		return 0, fmt.Errorf("%w: %s", invalidCommunityFormat, c)
+		return 0, fmt.Errorf("%w: %s", errInvalidCommunityFormat, c)
 	}
 	a, err := strconv.ParseUint(fs[0], 10, 16)
 	if err != nil {
-		return 0, fmt.Errorf("%w: invalid first section of community %q: %s", invalidCommunityValue, fs[0], err)
+		return 0, fmt.Errorf("%w: invalid first section of community %q: %s", errInvalidaCommunityValue, fs[0], err)
 	}
 	b, err := strconv.ParseUint(fs[1], 10, 16)
 	if err != nil {
-		return 0, fmt.Errorf("%w: invalid second section of community %q: %s", invalidCommunityValue, fs[1], err)
+		return 0, fmt.Errorf("%w: invalid second section of community %q: %s", errInvalidaCommunityValue, fs[1], err)
 	}
 
 	return (uint32(a) << 16) + uint32(b), nil
@@ -1113,10 +1172,8 @@ OUTER:
 				continue OUTER
 			}
 		}
-
 	}
 	return res, nil
-
 }
 
 func selectedPools(pools []metallbv1beta1.IPAddressPool, selectors []metav1.LabelSelector) ([]string, error) {

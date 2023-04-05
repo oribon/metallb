@@ -30,7 +30,6 @@ import (
 	v1beta1 "go.universe.tf/metallb/api/v1beta1"
 	v1beta2 "go.universe.tf/metallb/api/v1beta2"
 	"go.universe.tf/metallb/internal/config"
-	metallbcfg "go.universe.tf/metallb/internal/config"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -87,7 +86,7 @@ func TestConfigController(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		var resources metallbcfg.ClusterResources
+		var resources config.ClusterResources
 		if test.validResources {
 			resources = configControllerValidResources
 		} else {
@@ -105,7 +104,7 @@ func TestConfigController(t *testing.T) {
 			t.Fatalf("test %s failed to create config, got unexpected error: %v", test.desc, err)
 		}
 
-		cmpOpt := cmpopts.IgnoreUnexported(metallbcfg.Pool{})
+		cmpOpt := cmpopts.IgnoreUnexported(config.Pool{})
 
 		mockHandler := func(l log.Logger, cfg *config.Config) SyncState {
 			if !cmp.Equal(expectedCfg, cfg, cmpOpt) {
@@ -206,7 +205,7 @@ func TestSecretShouldntTrigger(t *testing.T) {
 
 	handlerCalled = false
 	err = fakeClient.Create(context.TODO(), &corev1.Secret{Type: corev1.SecretTypeBasicAuth, ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: testNamespace},
-		Data: map[string][]byte{"password": []byte([]byte("nopass"))}})
+		Data: map[string][]byte{"password": []byte("nopass")}})
 	if err != nil {
 		t.Fatalf("create failed on secret foo: %v", err)
 	}
@@ -227,17 +226,17 @@ func TestNodeEvent(t *testing.T) {
 		Scheme:                scheme,
 	}
 	cfg, err := testEnv.Start()
-	g.Expect(err).To(BeNil())
+	g.Expect(err).ToNot(HaveOccurred())
 	defer func() {
 		err = testEnv.Stop()
-		g.Expect(err).To(BeNil())
+		g.Expect(err).ToNot(HaveOccurred())
 	}()
 	err = v1beta1.AddToScheme(k8sscheme.Scheme)
-	g.Expect(err).To(BeNil())
+	g.Expect(err).ToNot(HaveOccurred())
 	err = v1beta2.AddToScheme(k8sscheme.Scheme)
-	g.Expect(err).To(BeNil())
+	g.Expect(err).ToNot(HaveOccurred())
 	m, err := manager.New(cfg, manager.Options{MetricsBindAddress: "0"})
-	g.Expect(err).To(BeNil())
+	g.Expect(err).ToNot(HaveOccurred())
 
 	var configUpdate int
 	var mutex sync.Mutex
@@ -259,11 +258,11 @@ func TestNodeEvent(t *testing.T) {
 		ValidateConfig: config.DontValidate,
 	}
 	err = r.SetupWithManager(m)
-	g.Expect(err).To(BeNil())
+	g.Expect(err).ToNot(HaveOccurred())
 	ctx := context.Background()
 	go func() {
 		err = m.Start(ctx)
-		g.Expect(err).To(BeNil())
+		g.Expect(err).ToNot(HaveOccurred())
 	}()
 
 	// count for update on namespace events
@@ -286,7 +285,7 @@ func TestNodeEvent(t *testing.T) {
 	node.Labels = make(map[string]string)
 	node.Labels["test"] = "e2e"
 	err = m.GetClient().Create(ctx, node)
-	g.Expect(err).To(BeNil())
+	g.Expect(err).ToNot(HaveOccurred())
 	g.Eventually(func() int {
 		mutex.Lock()
 		defer mutex.Unlock()
@@ -334,13 +333,12 @@ func TestNodeEvent(t *testing.T) {
 		defer mutex.Unlock()
 		return configUpdate
 	}, 5*time.Second, 200*time.Millisecond).Should(Equal(initialConfigUpdateCount + 2))
-
 }
 
 var (
 	testNamespace                  = "test-controller"
 	scheme                         = runtime.NewScheme()
-	configControllerValidResources = metallbcfg.ClusterResources{
+	configControllerValidResources = config.ClusterResources{
 		Peers: []v1beta2.BGPPeer{
 			{
 				ObjectMeta: metav1.ObjectMeta{
@@ -397,7 +395,7 @@ var (
 		},
 		PasswordSecrets: map[string]corev1.Secret{
 			"bgpsecret": {Type: corev1.SecretTypeBasicAuth, ObjectMeta: metav1.ObjectMeta{Name: "bgpsecret", Namespace: testNamespace},
-				Data: map[string][]byte{"password": []byte([]byte("nopass"))}},
+				Data: map[string][]byte{"password": []byte("nopass")}},
 		},
 		LegacyAddressPools: []v1beta1.AddressPool{
 			{
@@ -430,7 +428,7 @@ var (
 			},
 		},
 	}
-	configControllerInvalidResources = metallbcfg.ClusterResources{
+	configControllerInvalidResources = config.ClusterResources{
 		Peers: []v1beta2.BGPPeer{
 			{
 				ObjectMeta: metav1.ObjectMeta{

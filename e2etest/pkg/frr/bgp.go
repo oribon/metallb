@@ -49,7 +49,17 @@ func NeighborsInfo(exec executor.Executor) ([]*bgpfrr.Neighbor, error) {
 // Routes returns informations about routes in the given executor
 // first for ipv4 routes and then for ipv6 routes.
 func Routes(exec executor.Executor) (map[string]bgpfrr.Route, map[string]bgpfrr.Route, error) {
-	res, err := exec.Exec("vtysh", "-c", "show bgp ipv4 json")
+	return RoutesForVRF("", exec)
+}
+
+// RoutesForVRF returns informations about routes in the given executor
+// first for ipv4 routes and then for ipv6 routes for the given vrf.
+func RoutesForVRF(vrf string, exec executor.Executor) (map[string]bgpfrr.Route, map[string]bgpfrr.Route, error) {
+	cmd := "show bgp ipv4 json"
+	if vrf != "" {
+		cmd = fmt.Sprintf("show bgp vrf %s ipv4  json", vrf)
+	}
+	res, err := exec.Exec("vtysh", "-c", cmd)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "Failed to query routes")
 	}
@@ -57,7 +67,11 @@ func Routes(exec executor.Executor) (map[string]bgpfrr.Route, map[string]bgpfrr.
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "Failed to parse routes %s", res)
 	}
-	res, err = exec.Exec("vtysh", "-c", "show bgp ipv6 json")
+	cmd = "show bgp ipv6 json"
+	if vrf != "" {
+		cmd = fmt.Sprintf("show bgp vrf %s ipv6 json", vrf)
+	}
+	res, err = exec.Exec("vtysh", "-c", cmd)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "Failed to query routes")
 	}
@@ -111,8 +125,8 @@ func RoutesForCommunity(exec executor.Executor, community string, family ipfamil
 
 // NeighborConnected tells if the neighbor in the given
 // json format is connected.
-func NeighborConnected(neighborJson string) (bool, error) {
-	n, err := bgpfrr.ParseNeighbour(neighborJson)
+func NeighborConnected(neighborJSON string) (bool, error) {
+	n, err := bgpfrr.ParseNeighbour(neighborJSON)
 	if err != nil {
 		return false, err
 	}
@@ -129,43 +143,43 @@ func RawDump(exec executor.Executor, filesToDump ...string) (string, error) {
 	if err != nil {
 		allerrs = errors.Wrapf(allerrs, "\nFailed exec show bgp neighbor: %v", err)
 	}
-	res = res + out
+	res += out
 
 	for _, file := range filesToDump {
-		res = res + fmt.Sprintf("####### Dumping file %s\n", file)
+		res += fmt.Sprintf("####### Dumping file %s\n", file)
 		// limiting the output to 500 lines:
 		out, err = exec.Exec("bash", "-c", fmt.Sprintf("cat %s | tail -n 500", file))
 		if err != nil {
 			allerrs = errors.Wrapf(allerrs, "\nFailed to cat file %s: %v", file, err)
 		}
-		res = res + out
+		res += out
 	}
 
-	res = res + "####### BGP Neighbors\n"
+	res += "####### BGP Neighbors\n"
 	out, err = exec.Exec("vtysh", "-c", "show bgp neighbor")
 	if err != nil {
 		allerrs = errors.Wrapf(allerrs, "\nFailed exec show bgp neighbor: %v", err)
 	}
-	res = res + out
+	res += out
 
-	res = res + "####### BFD Peers\n"
+	res += "####### BFD Peers\n"
 	out, err = exec.Exec("vtysh", "-c", "show bfd peer")
 	if err != nil {
 		allerrs = errors.Wrapf(allerrs, "\nFailed exec show bfd peer: %v", err)
 	}
-	res = res + out
+	res += out
 
-	res = res + "####### Check for any crashinfo files\n"
+	res += "####### Check for any crashinfo files\n"
 	if crashInfo, err := exec.Exec("bash", "-c", "ls /var/tmp/frr/bgpd.*/crashlog"); err == nil {
 		crashInfo = strings.TrimSuffix(crashInfo, "\n")
 		files := strings.Split(crashInfo, "\n")
 		for _, file := range files {
-			res = res + fmt.Sprintf("####### Dumping crash file %s\n", file)
+			res += fmt.Sprintf("####### Dumping crash file %s\n", file)
 			out, err = exec.Exec("bash", "-c", fmt.Sprintf("cat %s", file))
 			if err != nil {
 				allerrs = errors.Wrapf(allerrs, "\nFailed to cat bgpd crashinfo file %s: %v", file, err)
 			}
-			res = res + out
+			res += out
 		}
 	}
 

@@ -49,7 +49,7 @@ type session struct {
 type sessionManager struct {
 }
 
-func NewSessionManager(l log.Logger) *sessionManager {
+func NewSessionManager(l log.Logger) bgp.SessionManager {
 	return &sessionManager{}
 }
 
@@ -76,6 +76,13 @@ func (sm *sessionManager) NewSession(l log.Logger, args bgp.SessionParameters) (
 
 func (sm *sessionManager) SyncBFDProfiles(profiles map[string]*config.BFDProfile) error {
 	return errors.New("bfd profiles not supported in native mode")
+}
+
+func (sm *sessionManager) SyncExtraInfo(extras string) error {
+	if extras != "" {
+		return errors.New("bgp extra info not supported in native mode")
+	}
+	return nil
 }
 
 // run tries to stay connected to the peer, and pumps route updates to it.
@@ -274,7 +281,7 @@ func (s *session) connect() error {
 	return nil
 }
 
-func hashRouterId(hostname string) (net.IP, error) {
+func hashRouterID(hostname string) (net.IP, error) {
 	buf := new(bytes.Buffer)
 	err := binary.Write(buf, binary.LittleEndian, crc32.ChecksumIEEE([]byte(hostname)))
 	if err != nil {
@@ -292,7 +299,7 @@ func getRouterID(addr net.IP, myNode string) (net.IP, error) {
 
 	ifaces, err := net.Interfaces()
 	if err != nil {
-		return hashRouterId(myNode)
+		return hashRouterID(myNode)
 	}
 	for _, i := range ifaces {
 		addrs, err := i.Addrs()
@@ -323,11 +330,11 @@ func getRouterID(addr net.IP, myNode string) (net.IP, error) {
 						return ip, nil
 					}
 				}
-				return hashRouterId(myNode)
+				return hashRouterID(myNode)
 			}
 		}
 	}
-	return hashRouterId(myNode)
+	return hashRouterID(myNode)
 }
 
 // sendKeepalives sends BGP KEEPALIVE packets at the negotiated rate
@@ -489,9 +496,9 @@ func (s *session) Close() error {
 }
 
 // DialTCP does the part of creating a connection manually,  including setting the
-// proper TCP MD5 options when the password is not empty. Works by manupulating
+// proper TCP MD5 options when the password is not empty. Works by manipulating
 // the low level FD's, skipping the net.Conn API as it has not hooks to set
-// the neccessary sockopts for TCP MD5.
+// the necessary sockopts for TCP MD5.
 func dialMD5(ctx context.Context, addr string, srcAddr net.IP, password string) (net.Conn, error) {
 	// If srcAddr exists on any of the local network interfaces, use it as the
 	// source address of the TCP socket. Otherwise, use the IPv6 unspecified
@@ -501,11 +508,11 @@ func dialMD5(ctx context.Context, addr string, srcAddr net.IP, password string) 
 	if srcAddr != nil {
 		ifs, err := net.Interfaces()
 		if err != nil {
-			return nil, fmt.Errorf("Querying local interfaces: %w", err)
+			return nil, fmt.Errorf("querying local interfaces: %w", err)
 		}
 
 		if !localAddressExists(ifs, srcAddr) {
-			return nil, fmt.Errorf("Address %q doesn't exist on this host", srcAddr)
+			return nil, fmt.Errorf("address %q doesn't exist on this host", srcAddr)
 		}
 
 		a = fmt.Sprintf("[%s]", srcAddr.String())
@@ -513,7 +520,7 @@ func dialMD5(ctx context.Context, addr string, srcAddr net.IP, password string) 
 
 	laddr, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:0", a))
 	if err != nil {
-		return nil, fmt.Errorf("Error resolving local address: %s ", err)
+		return nil, fmt.Errorf("error resolving local address: %s ", err)
 	}
 
 	raddr, err := net.ResolveTCPAddr("tcp", addr)

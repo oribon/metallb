@@ -22,7 +22,6 @@ import (
 	frrconfig "go.universe.tf/metallb/e2etest/pkg/frr/config"
 	frrcontainer "go.universe.tf/metallb/e2etest/pkg/frr/container"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/test/e2e/framework"
 	admissionapi "k8s.io/pod-security-admission/api"
@@ -31,7 +30,7 @@ import (
 var _ = ginkgo.Describe("BGP Node Selector", func() {
 	var cs clientset.Interface
 	var f *framework.Framework
-	var nodeToLabel *v1.Node
+	var nodeToLabel *corev1.Node
 
 	ginkgo.AfterEach(func() {
 		if nodeToLabel != nil {
@@ -124,8 +123,8 @@ var _ = ginkgo.Describe("BGP Node Selector", func() {
 			secondService, _ := testservice.CreateWithBackend(cs, f.Namespace.Name, "second-lb", testservice.WithSpecificPool("second-pool"))
 			defer testservice.Delete(cs, secondService)
 
-			checkServiceOnlyOnNodes(cs, firstService, expectedNodesForFirstPool, pairingIPFamily)
-			checkServiceOnlyOnNodes(cs, secondService, expectedNodesForSecondPool, pairingIPFamily)
+			checkServiceOnlyOnNodes(firstService, expectedNodesForFirstPool, pairingIPFamily)
+			checkServiceOnlyOnNodes(secondService, expectedNodesForSecondPool, pairingIPFamily)
 		},
 		ginkgo.Entry("IPV4 - two on first, two on second", ipfamily.IPv4, []string{"192.168.10.0/24", "192.168.16.0/24"}, []int{0, 1}, []int{0, 1}),
 		ginkgo.Entry("IPV4 - one on first, two on second", ipfamily.IPv4, []string{"192.168.10.0/24", "192.168.16.0/24"}, []int{0}, []int{0, 1}),
@@ -187,8 +186,8 @@ var _ = ginkgo.Describe("BGP Node Selector", func() {
 		svc, _ := testservice.CreateWithBackend(cs, f.Namespace.Name, "first-lb", testservice.TrafficPolicyCluster)
 		defer testservice.Delete(cs, svc)
 
-		checkCommunitiesOnlyOnNodes(cs, svc, CommunityNoAdv, expectedNodesForFirstAdv, pairingIPFamily)
-		checkCommunitiesOnlyOnNodes(cs, svc, CommunityGracefulShut, expectedNodesForSecondAdv, pairingIPFamily)
+		checkCommunitiesOnlyOnNodes(svc, CommunityNoAdv, expectedNodesForFirstAdv, pairingIPFamily)
+		checkCommunitiesOnlyOnNodes(svc, CommunityGracefulShut, expectedNodesForSecondAdv, pairingIPFamily)
 	},
 		ginkgo.Entry("IPV4 - two on first, two on second", ipfamily.IPv4, "192.168.10.0/24", []int{0, 1}, []int{0, 1}),
 		ginkgo.Entry("IPV4 - one on first, two on second", ipfamily.IPv4, "192.168.10.0/24", []int{0}, []int{0, 1}),
@@ -246,18 +245,18 @@ var _ = ginkgo.Describe("BGP Node Selector", func() {
 			defer testservice.Delete(cs, svc)
 
 			ginkgo.By("Validating service IP not advertised")
-			checkServiceNotOnNodes(cs, svc, allNodes.Items, pairingIPFamily)
+			checkServiceNotOnNodes(svc, allNodes.Items, pairingIPFamily)
 
 			nodeToLabel = &allNodes.Items[0]
 			ginkgo.By(fmt.Sprintf("Adding advertisement label to node %s", nodeToLabel.Name))
 			k8s.AddLabelToNode(nodeToLabel.Name, "bgp-node-selector-test", "true", cs)
 
 			ginkgo.By(fmt.Sprintf("Validating service IP advertised by %s", nodeToLabel.Name))
-			checkServiceOnlyOnNodes(cs, svc, []v1.Node{*nodeToLabel}, pairingIPFamily)
+			checkServiceOnlyOnNodes(svc, []corev1.Node{*nodeToLabel}, pairingIPFamily)
 
 			ginkgo.By("Validating service IP not advertised by other nodes")
 			nodesNotSelected := nodesNotSelected(allNodes.Items, []int{0})
-			checkServiceNotOnNodes(cs, svc, nodesNotSelected, pairingIPFamily)
+			checkServiceNotOnNodes(svc, nodesNotSelected, pairingIPFamily)
 		},
 		ginkgo.Entry("IPV4", ipfamily.IPv4, "192.168.10.0/24"),
 		ginkgo.Entry("IPV6", ipfamily.IPv6, "fc00:f853:0ccd:e799::/116"),
@@ -295,7 +294,7 @@ var _ = ginkgo.Describe("BGP Node Selector", func() {
 							p.Spec.NodeSelectors = k8s.SelectorsForNodes(nodes)
 							return
 						}
-						p.Spec.NodeSelectors = k8s.SelectorsForNodes([]v1.Node{})
+						p.Spec.NodeSelectors = k8s.SelectorsForNodes([]corev1.Node{})
 					}),
 			}
 			err = ConfigUpdater.Update(resources)
@@ -309,24 +308,24 @@ var _ = ginkgo.Describe("BGP Node Selector", func() {
 			for i, c := range FRRContainers {
 				selected := nodesForSelection(allNodes.Items, nodesForPeers[i])
 				nonSelected := nodesNotSelected(allNodes.Items, nodesForPeers[i])
-				validateFRRPeeredWithNodes(cs, selected, c, ipfamily.IPv4)
-				validateFRRNotPeeredWithNodes(cs, nonSelected, c, ipfamily.IPv4)
+				validateFRRPeeredWithNodes(selected, c, ipfamily.IPv4)
+				validateFRRNotPeeredWithNodes(nonSelected, c, ipfamily.IPv4)
 			}
 
 		},
 			ginkgo.Entry("First to one, second to two", map[int][]int{
-				0: []int{0},
-				1: []int{1, 2},
+				0: {0},
+				1: {1, 2},
 			}),
 			ginkgo.Entry("First to one, second to one, third to three", map[int][]int{
-				0: []int{0},
-				1: []int{1},
-				2: []int{0, 1, 2},
+				0: {0},
+				1: {1},
+				2: {0, 1, 2},
 			}),
 			ginkgo.Entry("First to one, second to one, third to same as first", map[int][]int{
-				0: []int{0},
-				1: []int{1},
-				2: []int{0},
+				0: {0},
+				1: {1},
+				2: {0},
 			}),
 		)
 	})
