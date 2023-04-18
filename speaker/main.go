@@ -411,8 +411,8 @@ func (c *controller) deleteBalancerProtocol(l log.Logger, protocol config.Proto,
 			return controllers.SyncStateSuccess
 		}
 	}
-	delete(c.svcIPs, name)
 	level.Info(l).Log("event", "serviceWithdrawn", "ip", c.svcIPs[name], "reason", reason, "msg", "withdrawing service announcement")
+	delete(c.svcIPs, name)
 
 	return controllers.SyncStateSuccess
 }
