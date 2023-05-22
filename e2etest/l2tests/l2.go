@@ -127,7 +127,7 @@ var _ = ginkgo.Describe("L2", func() {
 
 			gomega.Eventually(func() error {
 				return service.ValidateL2(svc)
-			}, 2*time.Minute, 1*time.Second).Should(gomega.BeNil())
+			}, 2*time.Minute, 1*time.Second).ShouldNot(gomega.HaveOccurred())
 		})
 
 		ginkgo.It("should work for ExternalTrafficPolicy=Local", func() {
@@ -178,7 +178,7 @@ var _ = ginkgo.Describe("L2", func() {
 				}
 
 				return nil
-			}, 5*time.Second, 1*time.Second).Should(gomega.BeNil())
+			}, 5*time.Second, 1*time.Second).ShouldNot(gomega.HaveOccurred())
 		})
 
 		ginkgo.It("IPV4 Should work with mixed protocol services", func() {
@@ -263,7 +263,7 @@ var _ = ginkgo.Describe("L2", func() {
 
 			gomega.Eventually(func() error {
 				return service.ValidateL2(svc)
-			}, 2*time.Minute, 1*time.Second).Should(gomega.BeNil())
+			}, 2*time.Minute, 1*time.Second).ShouldNot(gomega.HaveOccurred())
 		},
 			ginkgo.Entry("AddressPool defined by address range", func() []metallbv1beta1.IPAddressPool {
 				return []metallbv1beta1.IPAddressPool{
@@ -401,7 +401,7 @@ var _ = ginkgo.Describe("L2", func() {
 				return fmt.Errorf("service announced from different nodes %s %s", service1Announce, service2Announce)
 			}
 			return nil
-		}, 2*time.Minute, 1*time.Second).Should(gomega.BeNil())
+		}, 2*time.Minute, 1*time.Second).ShouldNot(gomega.HaveOccurred())
 
 	},
 		ginkgo.Entry("IPV4", &IPV4ServiceRange),
@@ -477,7 +477,7 @@ var _ = ginkgo.Describe("L2", func() {
 					return err
 				}
 				return nil
-			}, 2*time.Minute, 5*time.Second).Should(gomega.BeNil())
+			}, 2*time.Minute, 5*time.Second).ShouldNot(gomega.HaveOccurred())
 
 			ginkgo.By("creating a service")
 			svc, _ := service.CreateWithBackend(cs, f.Namespace.Name, "external-local-lb", service.TrafficPolicyCluster)
@@ -503,7 +503,7 @@ var _ = ginkgo.Describe("L2", func() {
 					return err
 				}
 				return nil
-			}, 2*time.Minute, 5*time.Second).Should(gomega.BeNil())
+			}, 2*time.Minute, 5*time.Second).ShouldNot(gomega.HaveOccurred())
 
 			ingressIP := e2eservice.GetIngressPoint(
 				&svc.Status.LoadBalancer.Ingress[0])
@@ -584,7 +584,7 @@ var _ = ginkgo.Describe("L2", func() {
 				}
 
 				return nil
-			}, 2*time.Minute, 5*time.Second).Should(gomega.BeNil())
+			}, 2*time.Minute, 5*time.Second).ShouldNot(gomega.HaveOccurred())
 
 			// Negative - validate that the other speakers don't publish layer2 metrics
 			delete(speakerPods, advSpeaker.Spec.NodeName)
@@ -622,7 +622,7 @@ var _ = ginkgo.Describe("L2", func() {
 				}
 
 				return nil
-			}, time.Minute, 5*time.Second).Should(gomega.BeNil())
+			}, time.Minute, 5*time.Second).ShouldNot(gomega.HaveOccurred())
 		},
 			ginkgo.Entry("IPV4 - Checking service", "ipv4"),
 			ginkgo.Entry("IPV6 - Checking service", "ipv6"))
