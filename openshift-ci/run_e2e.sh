@@ -21,7 +21,7 @@ sudo firewall-cmd --zone=libvirt --add-port=3785/udp
 sudo firewall-cmd --zone=libvirt --permanent --add-port=4784/udp
 sudo firewall-cmd --zone=libvirt --add-port=4784/udp
 
-# need to skip L2 metrics / node selector test because the pod that's running the tests is not 
+# need to skip L2 metrics / node selector test because the pod that's running the tests is not
 # same subnet of the cluster nodes, so the arp request that's done in the test won't work.
 # Also, skip l2 interface selector as it's not supported d/s currently.
 # Skip route injection after setting up speaker. FRR is not refreshed.
@@ -54,7 +54,7 @@ inv e2etest --kubeconfig=$(readlink -f ../../ocp/ostest/auth/kubeconfig) \
 	--service-pod-port=8080 --system-namespaces="metallb-system" --skip-docker \
 	--ipv4-service-range=192.168.10.0/24 --ipv6-service-range=fc00:f853:0ccd:e799::/124 \
 	--prometheus-namespace="openshift-monitoring" \
-	--local-nics="_" --node-nics="_" --skip="${SKIP}"
+	--local-nics="_" --node-nics="_" --skip="${SKIP}" --external-frr-image="quay.io/frrouting/frr:8.3.1"
 
 # This checks if conversion webhooks work and if metallb is compatible with the CRDs
 # in the operator. We clone the 4.10 version of metallb and run the E2E tests in
