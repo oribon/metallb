@@ -2,17 +2,15 @@ reviewers:
   - russellb
   - dougbtv
   - dcbw
-  - squeed
   - msherif1234
-  - markdgray
   - fedepaol
+  - oribon
 approvers:
   - russellb
   - dougbtv
   - dcbw
-  - squeed
   - msherif1234
-  - markdgray
   - fedepaol
+  - oribon
 component: "Networking"
 subcomponent: "metallb"
