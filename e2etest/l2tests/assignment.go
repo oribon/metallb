@@ -10,10 +10,9 @@ import (
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	metallbv1beta1 "go.universe.tf/metallb/api/v1beta1"
-	"go.universe.tf/metallb/e2etest/pkg/config"
-	"go.universe.tf/metallb/e2etest/pkg/k8s"
-	"go.universe.tf/metallb/e2etest/pkg/service"
-	internalconfig "go.universe.tf/metallb/internal/config"
+	"go.universe.tf/e2etest/pkg/config"
+	"go.universe.tf/e2etest/pkg/k8s"
+	"go.universe.tf/e2etest/pkg/service"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -81,7 +80,7 @@ var _ = ginkgo.Describe("IP Assignment", func() {
 			ip, err := config.GetIPFromRangeByIndex(IPV4ServiceRange, 0)
 			framework.ExpectNoError(err)
 
-			resources := internalconfig.ClusterResources{
+			resources := config.Resources{
 				Pools: []metallbv1beta1.IPAddressPool{
 					{
 						ObjectMeta: metav1.ObjectMeta{
@@ -183,7 +182,7 @@ var _ = ginkgo.Describe("IP Assignment", func() {
 					AllocateTo: &metallbv1beta1.ServiceAllocation{Namespaces: []string{f.Namespace.Name}},
 				},
 			}
-			resources := internalconfig.ClusterResources{
+			resources := config.Resources{
 				Pools: []metallbv1beta1.IPAddressPool{namespacePoolWithLowerPriority, namespacePoolWithHigherPriority, namespacePoolNoPriority},
 			}
 
@@ -252,7 +251,7 @@ var _ = ginkgo.Describe("IP Assignment", func() {
 				},
 			}
 
-			resources := internalconfig.ClusterResources{
+			resources := config.Resources{
 				Pools: []metallbv1beta1.IPAddressPool{namespacePoolWithLowerPriority, namespaceLabelPoolWithHigherPriority, namespacePoolNoPriority},
 			}
 			err = ConfigUpdater.Update(resources)
@@ -315,7 +314,7 @@ var _ = ginkgo.Describe("IP Assignment", func() {
 				},
 			}
 
-			resources := internalconfig.ClusterResources{
+			resources := config.Resources{
 				Pools: []metallbv1beta1.IPAddressPool{svcLabelPoolWithLowerPriority, svcLabelPoolWithHigherPriority, namespacePoolNoPriority},
 			}
 			err := ConfigUpdater.Update(resources)
@@ -383,7 +382,7 @@ var _ = ginkgo.Describe("IP Assignment", func() {
 				},
 			}
 
-			resources := internalconfig.ClusterResources{
+			resources := config.Resources{
 				Pools: []metallbv1beta1.IPAddressPool{namespacePoolWithLowerPriority, svcLabelPoolWithHigherPriority, namespacePoolNoPriority},
 			}
 			err := ConfigUpdater.Update(resources)
@@ -450,8 +449,24 @@ var _ = ginkgo.Describe("IP Assignment", func() {
 				},
 			}
 
-			resources := internalconfig.ClusterResources{
-				Pools: []metallbv1beta1.IPAddressPool{firstNamespacePool, secondNamespacePool, noNamespacePool},
+			newLabels := make(map[string]string)
+			for key, value := range secondNsLabels {
+				newLabels[key] = value
+			}
+			newLabels["newLabel"] = "true"
+
+			secondNamespacePoolHigherPriority := metallbv1beta1.IPAddressPool{
+				ObjectMeta: metav1.ObjectMeta{Name: "second-ns-labels-higher-priority-ip-pool"},
+				Spec: metallbv1beta1.IPAddressPoolSpec{
+					Addresses: []string{
+						"192.168.50.0/32",
+					},
+					AllocateTo: &metallbv1beta1.ServiceAllocation{Priority: 5, NamespaceSelectors: []metav1.LabelSelector{{MatchLabels: newLabels}}},
+				},
+			}
+
+			resources := config.Resources{
+				Pools: []metallbv1beta1.IPAddressPool{firstNamespacePool, secondNamespacePool, secondNamespacePoolHigherPriority, noNamespacePool},
 			}
 			err := ConfigUpdater.Update(resources)
 			framework.ExpectNoError(err)
@@ -479,6 +494,24 @@ var _ = ginkgo.Describe("IP Assignment", func() {
 			ginkgo.By("validate LoadBalancer IP is allocated from default address pool")
 			err = config.ValidateIPInRange([]metallbv1beta1.IPAddressPool{noNamespacePool}, e2eservice.GetIngressPoint(
 				&svc3.Status.LoadBalancer.Ingress[0]))
+			framework.ExpectNoError(err)
+
+			ginkgo.By("updating second namespace labels to match higher priority pool")
+			ns, err := cs.CoreV1().Namespaces().Get(context.Background(), secondNamespace, metav1.GetOptions{})
+			framework.ExpectNoError(err)
+			ns.Labels = newLabels
+			_, err = cs.CoreV1().Namespaces().Update(context.Background(), ns, metav1.UpdateOptions{})
+			framework.ExpectNoError(err)
+
+			ginkgo.By("creating a second svc that should get an ip from the higher priority pool")
+			svc4, _ := service.CreateWithBackend(cs, secondNamespace, "second-ns-service2")
+			defer func() {
+				service.Delete(cs, svc4)
+			}()
+
+			ginkgo.By("validate LoadBalancer IP is allocated from higher priority address pool")
+			err = config.ValidateIPInRange([]metallbv1beta1.IPAddressPool{secondNamespacePoolHigherPriority}, e2eservice.GetIngressPoint(
+				&svc4.Status.LoadBalancer.Ingress[0]))
 			framework.ExpectNoError(err)
 		})
 	})

@@ -10,7 +10,6 @@ import (
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	metallbv1beta1 "go.universe.tf/metallb/api/v1beta1"
-	internalconfig "go.universe.tf/metallb/internal/config"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientset "k8s.io/client-go/kubernetes"
@@ -18,12 +17,13 @@ import (
 	e2eservice "k8s.io/kubernetes/test/e2e/framework/service"
 	admissionapi "k8s.io/pod-security-admission/api"
 
-	"go.universe.tf/metallb/e2etest/pkg/executor"
-	"go.universe.tf/metallb/e2etest/pkg/k8s"
-	"go.universe.tf/metallb/e2etest/pkg/mac"
+	"go.universe.tf/e2etest/pkg/config"
+	"go.universe.tf/e2etest/pkg/executor"
+	"go.universe.tf/e2etest/pkg/k8s"
+	"go.universe.tf/e2etest/pkg/mac"
 
-	"go.universe.tf/metallb/e2etest/pkg/metallb"
-	"go.universe.tf/metallb/e2etest/pkg/service"
+	"go.universe.tf/e2etest/pkg/metallb"
+	"go.universe.tf/e2etest/pkg/service"
 )
 
 var (
@@ -64,7 +64,7 @@ var _ = ginkgo.Describe("L2-interface selector", func() {
 
 	ginkgo.Context("Interface Selector", func() {
 		ginkgo.BeforeEach(func() {
-			resources := internalconfig.ClusterResources{
+			resources := config.Resources{
 				Pools: []metallbv1beta1.IPAddressPool{
 					{
 						ObjectMeta: metav1.ObjectMeta{
@@ -84,7 +84,7 @@ var _ = ginkgo.Describe("L2-interface selector", func() {
 		})
 
 		ginkgo.It("Validate the LB IP's mac", func() {
-			resources := internalconfig.ClusterResources{
+			resources := config.Resources{
 				L2Advs: []metallbv1beta1.L2Advertisement{
 					{
 						ObjectMeta: metav1.ObjectMeta{
@@ -148,7 +148,7 @@ var _ = ginkgo.Describe("L2-interface selector", func() {
 			ingressIP := e2eservice.GetIngressPoint(&svc.Status.LoadBalancer.Ingress[0])
 
 			for i := range NodeNics {
-				resources := internalconfig.ClusterResources{
+				resources := config.Resources{
 					L2Advs: []metallbv1beta1.L2Advertisement{
 						{
 							ObjectMeta: metav1.ObjectMeta{
@@ -177,7 +177,7 @@ var _ = ginkgo.Describe("L2-interface selector", func() {
 		})
 
 		ginkgo.It("Specify not existing interfaces", func() {
-			resources := internalconfig.ClusterResources{
+			resources := config.Resources{
 				L2Advs: []metallbv1beta1.L2Advertisement{
 					{
 						ObjectMeta: metav1.ObjectMeta{
@@ -222,7 +222,7 @@ var _ = ginkgo.Describe("L2-interface selector", func() {
 					}
 				}
 				return fmt.Errorf("service hasn't receive the \"announceFailed\" event")
-			}, 1*time.Minute, 1*time.Second).Should(gomega.BeNil())
+			}, 1*time.Minute, 1*time.Second).ShouldNot(gomega.HaveOccurred())
 		})
 
 		ginkgo.It("Address pool connected with two L2 advertisements", func() {
@@ -233,7 +233,7 @@ var _ = ginkgo.Describe("L2-interface selector", func() {
 			}()
 
 			ingressIP := e2eservice.GetIngressPoint(&svc.Status.LoadBalancer.Ingress[0])
-			resources := internalconfig.ClusterResources{}
+			resources := config.Resources{}
 
 			for i := range NodeNics {
 				l2Adv := metallbv1beta1.L2Advertisement{
@@ -271,7 +271,7 @@ var _ = ginkgo.Describe("L2-interface selector", func() {
 
 			framework.ExpectNoError(err)
 			for _, node := range allNodes.Items {
-				resources := internalconfig.ClusterResources{
+				resources := config.Resources{
 					L2Advs: []metallbv1beta1.L2Advertisement{
 						{
 							ObjectMeta: metav1.ObjectMeta{
@@ -293,21 +293,11 @@ var _ = ginkgo.Describe("L2-interface selector", func() {
 				framework.ExpectNoError(err)
 
 				gomega.Eventually(func() string {
-					err := mac.RequestAddressResolutionFromIface(ingressIP, LocalNics[0], executor.Host)
+					node, err := nodeForService(svc, allNodes.Items)
 					if err != nil {
-						return err.Error()
+						return ""
 					}
-					err = service.ValidateL2(svc)
-					if err != nil {
-						return err.Error()
-					}
-
-					advNode, err := advertisingNodeFromMAC(allNodes.Items, ingressIP, executor.Host)
-					if err != nil {
-						return err.Error()
-					}
-
-					return advNode.Name
+					return node
 				}, 1*time.Minute, 1*time.Second).Should(gomega.Equal(node.Name))
 			}
 		})

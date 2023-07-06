@@ -5,20 +5,17 @@ package l2tests
 import (
 	"context"
 	"fmt"
-	"net"
-	"strconv"
 	"time"
 
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	metallbv1beta1 "go.universe.tf/metallb/api/v1beta1"
-	"go.universe.tf/metallb/e2etest/pkg/executor"
-	"go.universe.tf/metallb/e2etest/pkg/k8s"
-	"go.universe.tf/metallb/e2etest/pkg/mac"
-	"go.universe.tf/metallb/e2etest/pkg/service"
-	"go.universe.tf/metallb/e2etest/pkg/wget"
+	"go.universe.tf/e2etest/pkg/config"
+	"go.universe.tf/e2etest/pkg/executor"
+	"go.universe.tf/e2etest/pkg/k8s"
+	"go.universe.tf/e2etest/pkg/mac"
+	"go.universe.tf/e2etest/pkg/service"
 
-	internalconfig "go.universe.tf/metallb/internal/config"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -61,7 +58,7 @@ var _ = ginkgo.Describe("L2", func() {
 
 	ginkgo.Context("Node Selector", func() {
 		ginkgo.BeforeEach(func() {
-			resources := internalconfig.ClusterResources{
+			resources := config.Resources{
 				Pools: []metallbv1beta1.IPAddressPool{
 					{
 						ObjectMeta: metav1.ObjectMeta{
@@ -87,9 +84,6 @@ var _ = ginkgo.Describe("L2", func() {
 				framework.ExpectNoError(err)
 			}()
 
-			ingressIP := e2eservice.GetIngressPoint(
-				&svc.Status.LoadBalancer.Ingress[0])
-
 			allNodes, err := cs.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
 			framework.ExpectNoError(err)
 			for _, node := range allNodes.Items {
@@ -103,29 +97,19 @@ var _ = ginkgo.Describe("L2", func() {
 				}
 
 				ginkgo.By(fmt.Sprintf("Assigning the advertisement to node %s", node.Name))
-				resources := internalconfig.ClusterResources{
+				resources := config.Resources{
 					L2Advs: []metallbv1beta1.L2Advertisement{l2Advertisement},
 				}
 
 				err := ConfigUpdater.Update(resources)
 				framework.ExpectNoError(err)
 
-				port := strconv.Itoa(int(svc.Spec.Ports[0].Port))
-				hostport := net.JoinHostPort(ingressIP, port)
-				address := fmt.Sprintf("http://%s/", hostport)
-
 				gomega.Eventually(func() string {
-					err := mac.RequestAddressResolution(ingressIP, executor.Host)
+					node, err := nodeForService(svc, allNodes.Items)
 					if err != nil {
-						return err.Error()
+						return ""
 					}
-					err = wget.Do(address, executor.Host)
-					framework.ExpectNoError(err)
-					advNode, err := advertisingNodeFromMAC(allNodes.Items, ingressIP, executor.Host)
-					if err != nil {
-						return err.Error()
-					}
-					return advNode.Name
+					return node
 				}, 30*time.Second, 1*time.Second).Should(gomega.Equal(node.Name))
 			}
 		})
@@ -160,9 +144,6 @@ var _ = ginkgo.Describe("L2", func() {
 				})
 			framework.ExpectNoError(err)
 
-			ingressIP := e2eservice.GetIngressPoint(
-				&svc.Status.LoadBalancer.Ingress[0])
-
 			l2Advertisements := []metallbv1beta1.L2Advertisement{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -179,7 +160,7 @@ var _ = ginkgo.Describe("L2", func() {
 			}
 
 			ginkgo.By("Creating the l2 advertisements")
-			resources := internalconfig.ClusterResources{
+			resources := config.Resources{
 				L2Advs: l2Advertisements,
 			}
 
@@ -187,23 +168,13 @@ var _ = ginkgo.Describe("L2", func() {
 			framework.ExpectNoError(err)
 
 			ginkgo.By("checking connectivity to its external VIP")
-			port := strconv.Itoa(int(svc.Spec.Ports[0].Port))
-			hostport := net.JoinHostPort(ingressIP, port)
-			address := fmt.Sprintf("http://%s/", hostport)
 
 			gomega.Eventually(func() string {
-				err := mac.RequestAddressResolution(ingressIP, executor.Host)
+				node, err := nodeForService(svc, allNodes.Items)
 				if err != nil {
 					return err.Error()
 				}
-				err = wget.Do(address, executor.Host)
-				framework.ExpectNoError(err)
-
-				advNode, err := advertisingNodeFromMAC(allNodes.Items, ingressIP, executor.Host)
-				if err != nil {
-					return err.Error()
-				}
-				return advNode.Name
+				return node
 			}, 2*time.Minute, time.Second).Should(gomega.Equal(allNodes.Items[0].Name))
 		})
 
@@ -233,16 +204,12 @@ var _ = ginkgo.Describe("L2", func() {
 			}
 
 			ginkgo.By("Setting advertisement with node selector (no matching nodes)")
-			resources := internalconfig.ClusterResources{
+			resources := config.Resources{
 				L2Advs: []metallbv1beta1.L2Advertisement{l2Advertisement},
 			}
 
 			err := ConfigUpdater.Update(resources)
 			framework.ExpectNoError(err)
-
-			port := strconv.Itoa(int(svc.Spec.Ports[0].Port))
-			hostport := net.JoinHostPort(ingressIP, port)
-			address := fmt.Sprintf("http://%s/", hostport)
 
 			allNodes, err := cs.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
 			framework.ExpectNoError(err)
@@ -259,17 +226,11 @@ var _ = ginkgo.Describe("L2", func() {
 			ginkgo.By(fmt.Sprintf("Validating service IP advertised by %s", nodeToLabel.Name))
 
 			gomega.Eventually(func() string {
-				err := mac.RequestAddressResolution(ingressIP, executor.Host)
+				node, err := nodeForService(svc, allNodes.Items)
 				if err != nil {
 					return err.Error()
 				}
-				err = wget.Do(address, executor.Host)
-				framework.ExpectNoError(err)
-				advNode, err := advertisingNodeFromMAC(allNodes.Items, ingressIP, executor.Host)
-				if err != nil {
-					return err.Error()
-				}
-				return advNode.Name
+				return node
 			}, 2*time.Minute, time.Second).Should(gomega.Equal(nodeToLabel.Name))
 		})
 	})

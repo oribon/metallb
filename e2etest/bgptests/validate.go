@@ -13,15 +13,14 @@ import (
 	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metallbv1beta1 "go.universe.tf/metallb/api/v1beta1"
-	"go.universe.tf/metallb/e2etest/pkg/executor"
-	"go.universe.tf/metallb/e2etest/pkg/frr"
-	frrcontainer "go.universe.tf/metallb/e2etest/pkg/frr/container"
-	"go.universe.tf/metallb/e2etest/pkg/k8s"
-	"go.universe.tf/metallb/e2etest/pkg/metallb"
-	"go.universe.tf/metallb/e2etest/pkg/routes"
-	"go.universe.tf/metallb/e2etest/pkg/wget"
-	bgpfrr "go.universe.tf/metallb/internal/bgp/frr"
-	"go.universe.tf/metallb/internal/ipfamily"
+	"go.universe.tf/e2etest/pkg/executor"
+	"go.universe.tf/e2etest/pkg/frr"
+	frrcontainer "go.universe.tf/e2etest/pkg/frr/container"
+	"go.universe.tf/e2etest/pkg/ipfamily"
+	"go.universe.tf/e2etest/pkg/k8s"
+	"go.universe.tf/e2etest/pkg/metallb"
+	"go.universe.tf/e2etest/pkg/routes"
+	"go.universe.tf/e2etest/pkg/wget"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientset "k8s.io/client-go/kubernetes"
@@ -57,13 +56,14 @@ func validateFRRPeeredWithNodes(nodes []corev1.Node, c *frrcontainer.FRR, ipFami
 			return fmt.Errorf("failed to match neighbors for %s, %w", c.Name, err)
 		}
 		return nil
-	}, 4*time.Minute, 1*time.Second).Should(BeNil())
+	}, 4*time.Minute, 1*time.Second).ShouldNot(HaveOccurred(), "timed out waiting to validate nodes peered with the frr instance")
 }
 
 func validateService(svc *corev1.Service, nodes []corev1.Node, c *frrcontainer.FRR) {
+	ginkgo.By(fmt.Sprintf("Validating service %s is announced to container: %s", svc.Name, c.Name))
 	Eventually(func() error {
 		return validateServiceNoWait(svc, nodes, c)
-	}, 4*time.Minute, 1*time.Second).Should(BeNil())
+	}, 4*time.Minute, 1*time.Second).ShouldNot(HaveOccurred(), "timed out waiting to validate service")
 }
 
 func validateServiceNoWait(svc *corev1.Service, nodes []corev1.Node, c *frrcontainer.FRR) error {
@@ -85,7 +85,7 @@ func validateServiceNoWait(svc *corev1.Service, nodes []corev1.Node, c *frrconta
 			address := fmt.Sprintf("http://%s/", hostport)
 			err := wget.Do(address, c)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to wget from %s to %s: %w", c.Name, address, err)
 			}
 		}
 
@@ -149,10 +149,10 @@ func frrIsPairedOnPods(cs clientset.Interface, n *frrcontainer.FRR, ipFamily ipf
 			}
 		}
 		return nil
-	}, 4*time.Minute, 1*time.Second).Should(BeNil())
+	}, 4*time.Minute, 1*time.Second).ShouldNot(HaveOccurred())
 }
 
-func checkBFDConfigPropagated(nodeConfig metallbv1beta1.BFDProfile, peerConfig bgpfrr.BFDPeer) error {
+func checkBFDConfigPropagated(nodeConfig metallbv1beta1.BFDProfile, peerConfig frr.BFDPeer) error {
 	if peerConfig.Status != "up" {
 		return fmt.Errorf("peer status not up")
 	}
@@ -202,7 +202,7 @@ func checkServiceOnlyOnNodes(svc *corev1.Service, expectedNodes []corev1.Node, i
 				return fmt.Errorf("unexpectedIP found %s, nodes %s in container %s for service %s", n.String(), nodeIps, c.Name, ip)
 			}
 			return err
-		}, time.Minute, time.Second).Should(Not(HaveOccurred()))
+		}, time.Minute, time.Second).ShouldNot(HaveOccurred())
 	}
 }
 
@@ -256,7 +256,7 @@ func checkCommunitiesOnlyOnNodes(svc *corev1.Service, community string, expected
 				return fmt.Errorf("unexpectedIP found %s, nodes %s in container %s for service %s", n.String(), nodeIps, c.Name, ip)
 			}
 			return err
-		}, 10*time.Minute, time.Second).Should(Not(HaveOccurred()))
+		}, 10*time.Minute, time.Second).ShouldNot(HaveOccurred())
 	}
 }
 
@@ -331,7 +331,7 @@ func validateServiceInRoutesForCommunity(c *frrcontainer.FRR, community string, 
 			}
 		}
 		return nil
-	}, 4*time.Minute, 1*time.Second).Should(Not(HaveOccurred()))
+	}, 4*time.Minute, 1*time.Second).ShouldNot(HaveOccurred())
 }
 
 func validateServiceNotInRoutesForCommunity(c *frrcontainer.FRR, community string, family ipfamily.Family, svc *corev1.Service) {

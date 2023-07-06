@@ -30,17 +30,17 @@ import (
 	"github.com/onsi/gomega"
 	"github.com/openshift-kni/k8sreporter"
 	metallbv1beta1 "go.universe.tf/metallb/api/v1beta1"
-	"go.universe.tf/metallb/e2etest/pkg/config"
-	"go.universe.tf/metallb/e2etest/pkg/executor"
-	"go.universe.tf/metallb/e2etest/pkg/k8s"
-	"go.universe.tf/metallb/e2etest/pkg/mac"
-	"go.universe.tf/metallb/e2etest/pkg/metallb"
-	"go.universe.tf/metallb/e2etest/pkg/metrics"
-	"go.universe.tf/metallb/e2etest/pkg/service"
-	"go.universe.tf/metallb/e2etest/pkg/udp"
+	"go.universe.tf/e2etest/pkg/config"
+	"go.universe.tf/e2etest/pkg/executor"
+	"go.universe.tf/e2etest/pkg/iprange"
+	"go.universe.tf/e2etest/pkg/k8s"
+	"go.universe.tf/e2etest/pkg/mac"
+	"go.universe.tf/e2etest/pkg/metallb"
+	"go.universe.tf/e2etest/pkg/metrics"
+	"go.universe.tf/e2etest/pkg/service"
+	"go.universe.tf/e2etest/pkg/udp"
 
-	"go.universe.tf/metallb/e2etest/pkg/wget"
-	internalconfig "go.universe.tf/metallb/internal/config"
+	"go.universe.tf/e2etest/pkg/wget"
 	corev1 "k8s.io/api/core/v1"
 	pkgerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -95,7 +95,7 @@ var _ = ginkgo.Describe("L2", func() {
 
 	ginkgo.Context("type=Loadbalancer", func() {
 		ginkgo.BeforeEach(func() {
-			resources := internalconfig.ClusterResources{
+			resources := config.Resources{
 				Pools: []metallbv1beta1.IPAddressPool{
 					{
 						ObjectMeta: metav1.ObjectMeta{
@@ -127,7 +127,7 @@ var _ = ginkgo.Describe("L2", func() {
 
 			gomega.Eventually(func() error {
 				return service.ValidateL2(svc)
-			}, 2*time.Minute, 1*time.Second).Should(gomega.BeNil())
+			}, 2*time.Minute, 1*time.Second).ShouldNot(gomega.HaveOccurred())
 		})
 
 		ginkgo.It("should work for ExternalTrafficPolicy=Local", func() {
@@ -178,7 +178,7 @@ var _ = ginkgo.Describe("L2", func() {
 				}
 
 				return nil
-			}, 5*time.Second, 1*time.Second).Should(gomega.BeNil())
+			}, 5*time.Second, 1*time.Second).ShouldNot(gomega.HaveOccurred())
 		})
 
 		ginkgo.It("IPV4 Should work with mixed protocol services", func() {
@@ -232,12 +232,64 @@ var _ = ginkgo.Describe("L2", func() {
 			err = wget.Do(address, executor.Host)
 			framework.ExpectNoError(err)
 		})
+
+		ginkgo.It("should not be announced from a node with a NetworkUnavailable condition", func() {
+			svc, _ := service.CreateWithBackend(cs, f.Namespace.Name, "external-local-lb", service.TrafficPolicyCluster)
+			defer func() {
+				err := cs.CoreV1().Services(svc.Namespace).Delete(context.TODO(), svc.Name, metav1.DeleteOptions{})
+				framework.ExpectNoError(err)
+			}()
+
+			allNodes, err := cs.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
+			framework.ExpectNoError(err)
+
+			ginkgo.By("getting the advertising node")
+			var nodeToSet string
+
+			gomega.Eventually(func() error {
+				node, err := nodeForService(svc, allNodes.Items)
+				if err != nil {
+					return err
+				}
+				nodeToSet = node
+				return nil
+			}, 3*time.Minute, time.Second).ShouldNot(gomega.HaveOccurred())
+
+			err = k8s.SetNodeCondition(cs, nodeToSet, corev1.NodeNetworkUnavailable, corev1.ConditionTrue)
+			framework.ExpectNoError(err)
+			defer func() {
+				err = k8s.SetNodeCondition(cs, nodeToSet, corev1.NodeNetworkUnavailable, corev1.ConditionFalse)
+				framework.ExpectNoError(err)
+			}()
+
+			ginkgo.By("validating the service is announced from a different node")
+			gomega.Eventually(func() string {
+				node, err := nodeForService(svc, allNodes.Items)
+				if err != nil {
+					return err.Error()
+				}
+				return node
+			}, time.Minute, time.Second).ShouldNot(gomega.Equal(nodeToSet))
+
+			ginkgo.By("setting the NetworkUnavailable condition back to false")
+			err = k8s.SetNodeCondition(cs, nodeToSet, corev1.NodeNetworkUnavailable, corev1.ConditionFalse)
+			framework.ExpectNoError(err)
+
+			ginkgo.By("validating the service is announced back again from the previous node")
+			gomega.Eventually(func() string {
+				node, err := nodeForService(svc, allNodes.Items)
+				if err != nil {
+					return err.Error()
+				}
+				return node
+			}, time.Minute, time.Second).Should(gomega.Equal(nodeToSet))
+		})
 	})
 
 	ginkgo.Context("validate different AddressPools for type=Loadbalancer", func() {
 
 		ginkgo.DescribeTable("set different AddressPools ranges modes", func(getAddressPools func() []metallbv1beta1.IPAddressPool) {
-			resources := internalconfig.ClusterResources{
+			resources := config.Resources{
 				Pools:  getAddressPools(),
 				L2Advs: []metallbv1beta1.L2Advertisement{emptyL2Advertisement},
 			}
@@ -263,7 +315,7 @@ var _ = ginkgo.Describe("L2", func() {
 
 			gomega.Eventually(func() error {
 				return service.ValidateL2(svc)
-			}, 2*time.Minute, 1*time.Second).Should(gomega.BeNil())
+			}, 2*time.Minute, 1*time.Second).ShouldNot(gomega.HaveOccurred())
 		},
 			ginkgo.Entry("AddressPool defined by address range", func() []metallbv1beta1.IPAddressPool {
 				return []metallbv1beta1.IPAddressPool{
@@ -285,13 +337,13 @@ var _ = ginkgo.Describe("L2", func() {
 					var ipv4AddressesByCIDR []string
 					var ipv6AddressesByCIDR []string
 
-					cidrs, err := internalconfig.ParseCIDR(IPV4ServiceRange)
+					cidrs, err := iprange.Parse(IPV4ServiceRange)
 					framework.ExpectNoError(err)
 					for _, cidr := range cidrs {
 						ipv4AddressesByCIDR = append(ipv4AddressesByCIDR, cidr.String())
 					}
 
-					cidrs, err = internalconfig.ParseCIDR(IPV6ServiceRange)
+					cidrs, err = iprange.Parse(IPV6ServiceRange)
 					framework.ExpectNoError(err)
 					for _, cidr := range cidrs {
 						ipv6AddressesByCIDR = append(ipv6AddressesByCIDR, cidr.String())
@@ -311,7 +363,7 @@ var _ = ginkgo.Describe("L2", func() {
 	})
 
 	ginkgo.DescribeTable("different services sharing the same ip should advertise from the same node", func(ipRange *string) {
-		resources := internalconfig.ClusterResources{
+		resources := config.Resources{
 			Pools: []metallbv1beta1.IPAddressPool{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -401,7 +453,7 @@ var _ = ginkgo.Describe("L2", func() {
 				return fmt.Errorf("service announced from different nodes %s %s", service1Announce, service2Announce)
 			}
 			return nil
-		}, 2*time.Minute, 1*time.Second).Should(gomega.BeNil())
+		}, 2*time.Minute, 1*time.Second).ShouldNot(gomega.HaveOccurred())
 
 	},
 		ginkgo.Entry("IPV4", &IPV4ServiceRange),
@@ -432,7 +484,7 @@ var _ = ginkgo.Describe("L2", func() {
 
 		ginkgo.DescribeTable("should be exposed by the controller", func(ipFamily string) {
 			poolName := "l2-metrics-test"
-			resources := internalconfig.ClusterResources{
+			resources := config.Resources{
 				Pools: []metallbv1beta1.IPAddressPool{
 					{
 						ObjectMeta: metav1.ObjectMeta{
@@ -477,7 +529,7 @@ var _ = ginkgo.Describe("L2", func() {
 					return err
 				}
 				return nil
-			}, 2*time.Minute, 5*time.Second).Should(gomega.BeNil())
+			}, 2*time.Minute, 5*time.Second).ShouldNot(gomega.HaveOccurred())
 
 			ginkgo.By("creating a service")
 			svc, _ := service.CreateWithBackend(cs, f.Namespace.Name, "external-local-lb", service.TrafficPolicyCluster)
@@ -503,7 +555,7 @@ var _ = ginkgo.Describe("L2", func() {
 					return err
 				}
 				return nil
-			}, 2*time.Minute, 5*time.Second).Should(gomega.BeNil())
+			}, 2*time.Minute, 5*time.Second).ShouldNot(gomega.HaveOccurred())
 
 			ingressIP := e2eservice.GetIngressPoint(
 				&svc.Status.LoadBalancer.Ingress[0])
@@ -584,7 +636,7 @@ var _ = ginkgo.Describe("L2", func() {
 				}
 
 				return nil
-			}, 2*time.Minute, 5*time.Second).Should(gomega.BeNil())
+			}, 2*time.Minute, 5*time.Second).ShouldNot(gomega.HaveOccurred())
 
 			// Negative - validate that the other speakers don't publish layer2 metrics
 			delete(speakerPods, advSpeaker.Spec.NodeName)
@@ -622,7 +674,7 @@ var _ = ginkgo.Describe("L2", func() {
 				}
 
 				return nil
-			}, time.Minute, 5*time.Second).Should(gomega.BeNil())
+			}, time.Minute, 5*time.Second).ShouldNot(gomega.HaveOccurred())
 		},
 			ginkgo.Entry("IPV4 - Checking service", "ipv4"),
 			ginkgo.Entry("IPV6 - Checking service", "ipv6"))
@@ -650,7 +702,7 @@ var _ = ginkgo.Describe("L2", func() {
 			}
 			pools = append(pools, pool)
 
-			resources := internalconfig.ClusterResources{
+			resources := config.Resources{
 				Pools:  pools,
 				L2Advs: []metallbv1beta1.L2Advertisement{emptyL2Advertisement},
 			}

@@ -188,9 +188,9 @@ func (a *Allocator) Assign(svcKey string, svc *v1.Service, ips []net.IP, ports [
 }
 
 // Unassign frees the IP associated with service, if any.
-func (a *Allocator) Unassign(svc string) bool {
+func (a *Allocator) Unassign(svc string) {
 	if a.allocated[svc] == nil {
-		return false
+		return
 	}
 
 	al := a.allocated[svc]
@@ -216,7 +216,6 @@ func (a *Allocator) Unassign(svc string) bool {
 		}
 	}
 	stats.poolActive.WithLabelValues(al.pool).Set(float64(len(a.poolIPsInUse[al.pool])))
-	return true
 }
 
 // AllocateFromPool assigns an available IP from pool to service.
@@ -351,10 +350,7 @@ func (a *Allocator) isPoolCompatibleWithService(p *config.Pool, svc *v1.Service)
 // service has no IP allocated, "" is returned.
 func (a *Allocator) Pool(svc string) string {
 	if alloc := a.allocated[svc]; alloc != nil {
-		pool := poolFor(a.pools.ByName, alloc.ips)
-		if pool != nil {
-			return pool.Name
-		}
+		return alloc.pool
 	}
 	return ""
 }
