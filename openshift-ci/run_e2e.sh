@@ -56,6 +56,16 @@ inv e2etest --kubeconfig=$(readlink -f ../../ocp/ostest/auth/kubeconfig) \
 	--prometheus-namespace="openshift-monitoring" \
 	--local-nics="_" --node-nics="_" --skip="${SKIP}" --external-frr-image="quay.io/frrouting/frr:8.3.1"
 
+oc wait --for=delete namespace/metallb-system-other --timeout=2m || true # making sure the namespace is deleted (should happen in aftersuite)
+
+FOCUS_EBGP="BGP.*A service of protocol load balancer should work with.*IPV4 - ExternalTrafficPolicyCluster$" # Just a smoke test to make sure ebgp works
+
+inv e2etest --kubeconfig=$(readlink -f ../../ocp/ostest/auth/kubeconfig) \
+	--service-pod-port=8080 --system-namespaces="metallb-system" --skip-docker \
+	--ipv4-service-range=192.168.10.0/24 --ipv6-service-range=fc00:f853:0ccd:e799::/124 \
+	--prometheus-namespace="openshift-monitoring" \
+	--local-nics="_" --node-nics="_" --focus="${FOCUS_EBGP}" --external-frr-image="quay.io/frrouting/frr:8.3.1" --host-bgp-mode="ebgp"
+
 # This checks if conversion webhooks work and if metallb is compatible with the CRDs
 # in the operator. We clone the 4.10 version of metallb and run the E2E tests in
 # operator mode. We run few significative tests that cover all the crds.
