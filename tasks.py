@@ -524,7 +524,7 @@ def bgp_dev_env(ip_family, frr_volume_dir):
         '    docker rm -f $frr ; '
         'done', echo=True)
     run("docker run -d --privileged --network kind --rm --ulimit core=-1 --name frr --volume %s:/etc/frr "
-            "quay.io/frrouting/frr:8.4.2" % frr_volume_dir, echo=True)
+            "quay.io/frrouting/frr:8.5.2" % frr_volume_dir, echo=True)
 
     if ip_family == "ipv4":
         peer_address = run('docker inspect -f "{{ '
@@ -694,7 +694,7 @@ def bumprelease(ctx, version, previous_version):
     run("perl -pi -e 's/version\s+=.*/version = \"{}\"/g' internal/version/version.go".format(version), echo=True)
     run("gofmt -w internal/version/version.go", echo=True)
 
-    res = run('grep ":main" config/manifests/*.yaml').stdout
+    res = run('grep ":main" config/manifests/*.yaml', warn=True).stdout
     if res:
             raise Exit(message="ERROR: Found image still referring to the main tag")
 
