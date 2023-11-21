@@ -346,3 +346,9 @@ speaker:
 crds:
   enabled: true
   validationFailurePolicy: Fail
+
+# frrk8s is for enabling speaker in "frr-k8s" mode, where it uses
+# frr-k8s to configure FRR instead of directly managing it.
+# This is mutually exclusive with "speaker.frr.enabled".
+frrk8s:
+  enabled: false
