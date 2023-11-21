@@ -419,9 +419,9 @@ apiServer:
                                "--set prometheus.serviceAccount=prometheus-k8s "
                                "--set prometheus.namespace=monitoring ")
         run("helm install metallb charts/metallb/ --set controller.image.tag=dev-{} "
-                "--set speaker.image.tag=dev-{} --set speaker.frr.enabled={} --set speaker.logLevel=debug "
+                "--set speaker.image.tag=dev-{} --set speaker.frr.enabled={} --set speaker.logLevel=debug --set frrk8s.enabled={} "
                 "--set controller.logLevel=debug {} --namespace metallb-system".format(architecture, architecture,
-                "true" if bgp_type == "frr" else "false", prometheus_values), echo=True)
+                "true" if bgp_type == "frr" else "false","true" if bgp_type == "frr-k8s" else "false", prometheus_values), echo=True)
     else:
         run("{} delete po -n metallb-system --all".format(kubectl_path), echo=True)
 
