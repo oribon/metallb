@@ -784,12 +784,12 @@ def helmdocs(ctx, env="container"):
     "node_nics": "a list of node's interfaces separated by comma, default is kind",
     "local_nics": "a list of bridges related node's interfaces separated by comma, default is kind",
     "external_containers": "a comma separated list of external containers names to use for the test. (valid parameters are: ibgp-single-hop / ibgp-multi-hop / ebgp-single-hop / ebgp-multi-hop)",
-    "native_bgp": "tells if the given cluster is deployed using native bgp mode ",
+    "bgp_mode": "tells what bgp mode the cluster is using. valid values are native, frr, frr-k8s. default is frr",
     "external_frr_image": "overrides the image used for the external frr containers used in tests",
     "ginkgo_params": "additional ginkgo params to run the e2e tests with",
-    "host_bgp_mode": "tells whether to run the host container in ebgp or ibgp mode"
+    "host_bgp_mode": "tells whether to run the host container in ebgp or ibgp mode",
 })
-def e2etest(ctx, name="kind", export=None, kubeconfig=None, system_namespaces="kube-system,metallb-system", service_pod_port=80, skip_docker=False, focus="", skip="", ipv4_service_range=None, ipv6_service_range=None, prometheus_namespace="", node_nics="kind", local_nics="kind", external_containers="", native_bgp=False,external_frr_image="", ginkgo_params="", host_bgp_mode="ibgp"):
+def e2etest(ctx, name="kind", export=None, kubeconfig=None, system_namespaces="kube-system,metallb-system", service_pod_port=80, skip_docker=False, focus="", skip="", ipv4_service_range=None, ipv6_service_range=None, prometheus_namespace="", node_nics="kind", local_nics="kind", external_containers="", bgp_mode="frr",external_frr_image="", ginkgo_params="", host_bgp_mode="ibgp"):
     """Run E2E tests against development cluster."""
     _fetch_kubectl()
 
@@ -852,7 +852,7 @@ def e2etest(ctx, name="kind", export=None, kubeconfig=None, system_namespaces="k
     if external_frr_image != "":
         external_frr_image = "--frr-image="+(external_frr_image)
     testrun = run("cd `git rev-parse --show-toplevel`/e2etest &&"
-            "KUBECONFIG={} ginkgo {} --timeout=3h {} {} -- --provider=local --kubeconfig={} --service-pod-port={} -ipv4-service-range={} -ipv6-service-range={} {} --report-path {} {} -node-nics {} -local-nics {} {}  -bgp-native-mode={} {} --host-bgp-mode={}".format(kubeconfig, ginkgo_params, ginkgo_focus, ginkgo_skip, kubeconfig, service_pod_port, ipv4_service_range, ipv6_service_range, opt_skip_docker, report_path, prometheus_namespace, node_nics, local_nics, external_containers, native_bgp, external_frr_image, host_bgp_mode), warn="True")
+            "KUBECONFIG={} ginkgo {} --timeout=3h {} {} -- --provider=local --kubeconfig={} --service-pod-port={} -ipv4-service-range={} -ipv6-service-range={} {} --report-path {} {} -node-nics {} -local-nics {} {}  -bgp-mode={} {} --host-bgp-mode={}".format(kubeconfig, ginkgo_params, ginkgo_focus, ginkgo_skip, kubeconfig, service_pod_port, ipv4_service_range, ipv6_service_range, opt_skip_docker, report_path, prometheus_namespace, node_nics, local_nics, external_containers, bgp_mode, external_frr_image, host_bgp_mode), warn="True")
 
     if export != None:
         run("kind export logs {}".format(export))
@@ -898,6 +898,7 @@ def generatemanifests(ctx):
     generate_manifest(ctx, bgp_type="frr", with_prometheus=True, output="config/manifests/metallb-frr-prometheus.yaml")
     generate_manifest(ctx, bgp_type="native", with_prometheus=True, output="config/manifests/metallb-native-prometheus.yaml")
     generate_manifest(ctx, bgp_type="frr-k8s", output="config/manifests/metallb-frr-k8s.yaml")
+    generate_manifest(ctx, bgp_type="frr-k8s", with_prometheus=True,output="config/manifests/metallb-frr-k8s-prometheus.yaml")
 
     _align_helm_crds(
         source='config/manifests/metallb-frr.yaml',

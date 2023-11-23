@@ -293,40 +293,40 @@ func externalContainersConfigs() map[string]frrcontainer.Config {
 	res["ibgp-single-hop"] = frrcontainer.Config{
 		Name: "ibgp-single-hop",
 		Neighbor: frrconfig.NeighborConfig{
-			ASN:      metalLBASN,
-			Password: "ibgp-test",
+			ASN: metalLBASN,
+			// Password: "ibgp-test", TODO: should be fine when we fix passwords
 			MultiHop: false,
 		},
 		Router: frrconfig.RouterConfig{
-			ASN:      metalLBASN,
-			BGPPort:  179,
-			Password: "ibgp-test",
+			ASN:     metalLBASN,
+			BGPPort: 179,
+			// Password: "ibgp-test", TODO: should be fine when we fix passwords
 		},
 	}
 	res["ibgp-multi-hop"] = frrcontainer.Config{
 		Name: "ibgp-multi-hop",
 		Neighbor: frrconfig.NeighborConfig{
-			ASN:      metalLBASN,
-			Password: "ibgp-test",
+			ASN: metalLBASN,
+			// Password: "ibgp-test", TODO: should be fine when we fix passwords
 			MultiHop: true,
 		},
 		Router: frrconfig.RouterConfig{
-			ASN:      metalLBASN,
-			BGPPort:  180,
-			Password: "ibgp-test",
+			ASN:     metalLBASN,
+			BGPPort: 180,
+			// Password: "ibgp-test", TODO: should be fine when we fix passwords
 		},
 	}
 	res["ebgp-multi-hop"] = frrcontainer.Config{
 		Name: "ebgp-multi-hop",
 		Neighbor: frrconfig.NeighborConfig{
-			ASN:      metalLBASN,
-			Password: "ebgp-test",
+			ASN: metalLBASN,
+			// Password: "ebgp-test", TODO: should be fine when we fix passwords
 			MultiHop: true,
 		},
 		Router: frrconfig.RouterConfig{
-			ASN:      externalASN,
-			BGPPort:  180,
-			Password: "ebgp-test",
+			ASN:     externalASN,
+			BGPPort: 180,
+			// Password: "ebgp-test", TODO: should be fine when we fix passwords
 		},
 	}
 	res["ebgp-single-hop"] = frrcontainer.Config{
@@ -351,14 +351,14 @@ func hostnetContainerConfig(image string, bgpMode HostBGPMode) map[string]frrcon
 				Name:  "ibgp-single-hop",
 				Image: image,
 				Neighbor: frrconfig.NeighborConfig{
-					ASN:      metalLBASN,
-					Password: "ibgp-test",
+					ASN: metalLBASN,
+					// Password: "ibgp-test", TODO: should be fine when we fix passwords
 					MultiHop: false,
 				},
 				Router: frrconfig.RouterConfig{
-					ASN:      metalLBASN,
-					BGPPort:  179,
-					Password: "ibgp-test",
+					ASN:     metalLBASN,
+					BGPPort: 179,
+					// Password: "ibgp-test", TODO: should be fine when we fix passwords
 				},
 				Network:  "host",
 				HostIPv4: hostIPv4,
@@ -394,14 +394,14 @@ func frrContainersConfigs(image string) map[string]frrcontainer.Config {
 		Name:  "ibgp-single-hop",
 		Image: image,
 		Neighbor: frrconfig.NeighborConfig{
-			ASN:      metalLBASN,
-			Password: "ibgp-test",
+			ASN: metalLBASN,
+			// Password: "ibgp-test", TODO: should be fine when we fix passwords
 			MultiHop: false,
 		},
 		Router: frrconfig.RouterConfig{
-			ASN:      metalLBASN,
-			BGPPort:  179,
-			Password: "ibgp-test",
+			ASN:     metalLBASN,
+			BGPPort: 179,
+			// Password: "ibgp-test", TODO: should be fine when we fix passwords
 		},
 		Network:  kindNetwork,
 		HostIPv4: hostIPv4,
@@ -411,14 +411,14 @@ func frrContainersConfigs(image string) map[string]frrcontainer.Config {
 		Name:  "ibgp-multi-hop",
 		Image: image,
 		Neighbor: frrconfig.NeighborConfig{
-			ASN:      metalLBASN,
-			Password: "ibgp-test",
+			ASN: metalLBASN,
+			// Password: "ibgp-test", TODO: should be fine when we fix passwords
 			MultiHop: true,
 		},
 		Router: frrconfig.RouterConfig{
-			ASN:      metalLBASN,
-			BGPPort:  180,
-			Password: "ibgp-test",
+			ASN:     metalLBASN,
+			BGPPort: 180,
+			// Password: "ibgp-test", TODO: should be fine when we fix passwords
 		},
 		Network:  defaultNextHopSettings.multiHopNetwork,
 		HostIPv4: hostIPv4,
@@ -428,14 +428,14 @@ func frrContainersConfigs(image string) map[string]frrcontainer.Config {
 		Name:  "ebgp-multi-hop",
 		Image: image,
 		Neighbor: frrconfig.NeighborConfig{
-			ASN:      metalLBASN,
-			Password: "ebgp-test",
+			ASN: metalLBASN,
+			// Password: "ebgp-test", TODO: should be fine when we fix passwords
 			MultiHop: true,
 		},
 		Router: frrconfig.RouterConfig{
-			ASN:      externalASN,
-			BGPPort:  180,
-			Password: "ebgp-test",
+			ASN:     externalASN,
+			BGPPort: 180,
+			// Password: "ebgp-test", TODO: should be fine when we fix passwords
 		},
 		Network:  defaultNextHopSettings.multiHopNetwork,
 		HostIPv4: hostIPv4,
@@ -464,15 +464,15 @@ func vrfContainersConfig(image string) map[string]frrcontainer.Config {
 		Image:   image,
 		Network: vrfNetwork,
 		Neighbor: frrconfig.NeighborConfig{
-			ASN:      metalLBASNVRF,
-			Password: "vrf-test",
+			ASN: metalLBASNVRF,
+			// Password: "vrf-test", TODO: should be fine when we fix passwords
 			MultiHop: false,
 		},
 		Router: frrconfig.RouterConfig{
-			ASN:      externalASN,
-			Password: "vrf-test",
-			BGPPort:  179,
-			VRF:      vrfName,
+			ASN: externalASN,
+			// Password: "vrf-test", TODO: should be fine when we fix passwords
+			BGPPort: 179,
+			VRF:     vrfName,
 		},
 	}
 	res["ibgp-vrf-single-hop"] = frrcontainer.Config{
@@ -480,30 +480,30 @@ func vrfContainersConfig(image string) map[string]frrcontainer.Config {
 		Image:   image,
 		Network: vrfNetwork,
 		Neighbor: frrconfig.NeighborConfig{
-			ASN:      metalLBASNVRF,
-			Password: "vrf-test",
+			ASN: metalLBASNVRF,
+			// Password: "vrf-test", TODO: should be fine when we fix passwords
 			MultiHop: false,
 		},
 		Router: frrconfig.RouterConfig{
-			ASN:      metalLBASNVRF,
-			BGPPort:  179,
-			Password: "vrf-test",
-			VRF:      vrfName,
+			ASN:     metalLBASNVRF,
+			BGPPort: 179,
+			// Password: "vrf-test", TODO: should be fine when we fix passwords
+			VRF: vrfName,
 		},
 	}
 	res["ibgp-vrf-multi-hop"] = frrcontainer.Config{
 		Name:  "ibgp-vrf-multi-hop",
 		Image: image,
 		Neighbor: frrconfig.NeighborConfig{
-			ASN:      metalLBASNVRF,
-			Password: "ibgp-test",
+			ASN: metalLBASNVRF,
+			// Password: "ibgp-test", TODO: should be fine when we fix passwords
 			MultiHop: true,
 		},
 		Router: frrconfig.RouterConfig{
-			ASN:      metalLBASNVRF,
-			BGPPort:  180,
-			Password: "ibgp-test",
-			VRF:      vrfName,
+			ASN:     metalLBASNVRF,
+			BGPPort: 180,
+			// Password: "ibgp-test", TODO: should be fine when we fix passwords
+			VRF: vrfName,
 		},
 		Network: vrfNextHopSettings.multiHopNetwork,
 	}
@@ -511,15 +511,15 @@ func vrfContainersConfig(image string) map[string]frrcontainer.Config {
 		Name:  "ebgp-vrf-multi-hop",
 		Image: image,
 		Neighbor: frrconfig.NeighborConfig{
-			ASN:      metalLBASNVRF,
-			Password: "ebgp-test",
+			ASN: metalLBASNVRF,
+			// Password: "ebgp-test", TODO: should be fine when we fix passwords
 			MultiHop: true,
 		},
 		Router: frrconfig.RouterConfig{
-			ASN:      externalASN,
-			BGPPort:  180,
-			Password: "ebgp-test",
-			VRF:      vrfName,
+			ASN:     externalASN,
+			BGPPort: 180,
+			// Password: "ebgp-test", TODO: should be fine when we fix passwords
+			VRF: vrfName,
 		},
 		Network: vrfNextHopSettings.multiHopNetwork,
 	}

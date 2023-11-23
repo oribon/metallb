@@ -62,6 +62,7 @@ const (
 
 var (
 	ConfigUpdater       config.Updater
+	FRRProvider         config.FRRProvider
 	Reporter            *k8sreporter.KubernetesReporter
 	ReportPath          string
 	PrometheusNamespace string
@@ -1308,7 +1309,8 @@ var _ = ginkgo.Describe("BGP", func() {
 			framework.ExpectNoError(err)
 
 			for _, pod := range speakerPods {
-				podExecutor := executor.ForPod(pod.Namespace, pod.Name, "frr")
+				podExecutor, err := FRRProvider.FRRForSpeaker(pod.Namespace, pod.Name)
+				framework.ExpectNoError(err)
 
 				Eventually(func() string {
 					// We need to assert against the output of the command as a bare string, as

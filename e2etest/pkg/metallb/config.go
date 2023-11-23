@@ -7,9 +7,9 @@ import (
 	"os"
 	"time"
 
-	metallbv1beta2 "go.universe.tf/metallb/api/v1beta2"
 	frrcontainer "go.universe.tf/e2etest/pkg/frr/container"
 	"go.universe.tf/e2etest/pkg/ipfamily"
+	metallbv1beta2 "go.universe.tf/metallb/api/v1beta2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -46,11 +46,11 @@ func PeersForContainers(containers []*frrcontainer.FRR, ipFamily ipfamily.Family
 					Name: c.Name + fmt.Sprint(i), // Otherwise the peers will override
 				},
 				Spec: metallbv1beta2.BGPPeerSpec{
-					Address:      address,
-					ASN:          c.RouterConfig.ASN,
-					MyASN:        c.NeighborConfig.ASN,
-					Port:         c.RouterConfig.BGPPort,
-					Password:     c.RouterConfig.Password,
+					Address: address,
+					ASN:     c.RouterConfig.ASN,
+					MyASN:   c.NeighborConfig.ASN,
+					Port:    c.RouterConfig.BGPPort,
+					// Password:     c.RouterConfig.Password, TODO: should be fine when we fix passwords
 					HoldTime:     metav1.Duration{Duration: holdTime},
 					EBGPMultiHop: ebgpMultihop,
 					VRFName:      c.RouterConfig.VRF,
