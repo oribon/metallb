@@ -3,6 +3,12 @@ title: Release Notes
 weight: 8
 ---
 
+## Version 0.14.3
+
+BugFixes:
+
+- Do not deploy the deprecated AddressPool crds and webhooks. The code that was handling them was removed, it makes no sense to deploy them. ([PR 2267](https://github.com/metallb/metallb/pull/2267)).
+
 ## Version 0.14.2
 
 New features:
@@ -168,6 +174,8 @@ Bug Fixes:
 
 - Potential memory leak when receiving updates of the same service multiple times ([PR 1570](https://github.com/metallb/metallb/pull/1570))
 
+This release includes contributions from Federico Paolinelli, Jan Jansen, Magesh Dhasayyan. Thank you!
+
 ## Version 0.13.4
 
 New Features:
@@ -187,6 +195,8 @@ to setting the aggregation length and validating it. ([Issue 1495](https://githu
 [Issue 1521](https://github.com/metallb/metallb/issues/1521),
 [PR 1522](https://github.com/metallb/metallb/pull/1522))
 
+This release includes contributions from cyclinder, Federico Paolinelli, Periyasamy Palanisamy. Thank you!
+
 ## Version 0.13.3
 
 Bug Fixes:
@@ -195,6 +205,8 @@ Bug Fixes:
 - Fail the helm release if the deprecated configinline is provided ([PR 1485](https://github.com/metallb/metallb/pull/1485))
 - Helm charts give the permissions to watch communities. This will get rid of the `Failed to watch *v1beta1.Community` log error. ([PR 1487](https://github.com/metallb/metallb/pull/1487))
 - Helm charts: add the labelselectors to the webhook service. This solves webhook issues when multiple ([PR 1487](https://github.com/metallb/metallb/pull/1487))
+
+This release includes contributions from Federico Paolinelli, Joshua Carnes, Lalit Maganti, Philipp Born. Thank you!
 
 ## Version 0.13.2
 
