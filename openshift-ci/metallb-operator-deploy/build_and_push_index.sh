@@ -3,7 +3,7 @@
 yum install jq git wget -y
 cd /tmp/metallb-operator-deploy
 
-wget https://github.com/operator-framework/operator-registry/releases/download/v1.23.0/linux-amd64-opm
+wget -q https://github.com/operator-framework/operator-registry/releases/download/v1.23.0/linux-amd64-opm
 mv linux-amd64-opm opm
 chmod +x ./opm
 export pass=$( jq .\"image-registry.openshift-image-registry.svc:5000\".password /var/run/secrets/openshift.io/push/.dockercfg )

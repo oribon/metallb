@@ -4,7 +4,6 @@ metallb_dir="$(dirname $(readlink -f $0))"
 source ${metallb_dir}/common.sh
 
 METALLB_REPO=${METALLB_REPO:-"https://github.com/openshift/metallb.git"}
-BACKWARD_COMPATIBLE_RELEASE=${BACKWARD_COMPATIBLE_RELEASE:-"release-4.10"}
 
 # add firewalld rules
 sudo firewall-cmd --zone=libvirt --permanent --add-port=179/tcp
@@ -25,7 +24,7 @@ sudo firewall-cmd --zone=libvirt --add-port=4784/udp
 # same subnet of the cluster nodes, so the arp request that's done in the test won't work.
 # Also, skip l2 interface selector as it's not supported d/s currently.
 # Skip route injection after setting up speaker. FRR is not refreshed.
-SKIP="L2 metrics|L2 Node Selector|L2-interface selector|MetalLB allows adding extra FRR configuration.*after"
+SKIP="L2 metrics|L2 Node Selector|L2-interface selector|FRRK8S-MODE"
 if [ "${IP_STACK}" = "v4" ]; then
 	SKIP="$SKIP|IPV6|DUALSTACK"
 	export PROVISIONING_HOST_EXTERNAL_IPV4=${PROVISIONING_HOST_EXTERNAL_IP}
@@ -54,7 +53,8 @@ inv e2etest --kubeconfig=$(readlink -f ../../ocp/ostest/auth/kubeconfig) \
 	--service-pod-port=8080 --system-namespaces="metallb-system" --skip-docker \
 	--ipv4-service-range=192.168.10.0/24 --ipv6-service-range=fc00:f853:0ccd:e799::/124 \
 	--prometheus-namespace="openshift-monitoring" \
-	--local-nics="_" --node-nics="_" --skip="${SKIP}" --external-frr-image="quay.io/frrouting/frr:8.3.1"
+	--local-nics="_" --node-nics="_" --skip="${SKIP}" --external-frr-image="quay.io/frrouting/frr:8.3.1" \
+	--bgp-mode=frr
 
 oc wait --for=delete namespace/metallb-system-other --timeout=2m || true # making sure the namespace is deleted (should happen in aftersuite)
 
@@ -64,29 +64,5 @@ inv e2etest --kubeconfig=$(readlink -f ../../ocp/ostest/auth/kubeconfig) \
 	--service-pod-port=8080 --system-namespaces="metallb-system" --skip-docker \
 	--ipv4-service-range=192.168.10.0/24 --ipv6-service-range=fc00:f853:0ccd:e799::/124 \
 	--prometheus-namespace="openshift-monitoring" \
-	--local-nics="_" --node-nics="_" --focus="${FOCUS_EBGP}" --external-frr-image="quay.io/frrouting/frr:8.3.1" --host-bgp-mode="ebgp"
-
-# This checks if conversion webhooks work and if metallb is compatible with the CRDs
-# in the operator. We clone the 4.10 version of metallb and run the E2E tests in
-# operator mode. We run few significative tests that cover all the crds.
-cat <<EOF | kubectl apply -f -
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  namespace: metallb-system
-  name: config
-EOF
-
-git clone -b ${BACKWARD_COMPATIBLE_RELEASE} ${METALLB_REPO}
-
-metallb_root=$(dirname $metallb_dir )
-# We need to invert the order as deleting a used bfd profile is not allowed.
-patch metallb/e2etest/pkg/config/update.go < "$metallb_root"/e2etest/backwardcompatible/patchfile
-
-rm -rf e2etest # we want to make sure we are not running current e2e by mistake
-cd metallb
-FOCUS="\"L2.*should work for ExternalTrafficPolicy=Cluster\"\|\"BGP.*A service of protocol load balancer should work with.*IPV4 - ExternalTrafficPolicyCluster$\"\|\"BFD.*IPV4 - full params$\""
-inv e2etest --kubeconfig=$(readlink -f ../../../ocp/ostest/auth/kubeconfig) \
-	--service-pod-port=8080 --system-namespaces="metallb-system" --skip-docker \
-	--ipv4-service-range=192.168.10.0/24 --ipv6-service-range=fc00:f853:0ccd:e799::/124 \
-	--focus="${FOCUS}" --use-operator
+	--local-nics="_" --node-nics="_" --focus="${FOCUS_EBGP}" --external-frr-image="quay.io/frrouting/frr:8.3.1" \
+	--host-bgp-mode="ebgp" --bgp-mode=frr
