@@ -34,7 +34,6 @@ import (
 	"go.universe.tf/e2etest/pkg/k8s"
 	"go.universe.tf/e2etest/pkg/mac"
 	"go.universe.tf/e2etest/pkg/metallb"
-	"go.universe.tf/e2etest/pkg/pointer"
 	metallbv1beta1 "go.universe.tf/metallb/api/v1beta1"
 	metallbv1beta2 "go.universe.tf/metallb/api/v1beta2"
 
@@ -51,6 +50,7 @@ import (
 	"k8s.io/kubernetes/test/e2e/framework"
 	e2eservice "k8s.io/kubernetes/test/e2e/framework/service"
 	admissionapi "k8s.io/pod-security-admission/api"
+	"k8s.io/utils/ptr"
 )
 
 const (
@@ -536,12 +536,12 @@ var _ = ginkgo.Describe("BGP", func() {
 						Name: "full1",
 					},
 					Spec: metallbv1beta1.BFDProfileSpec{
-						ReceiveInterval:  pointer.Uint32Ptr(60),
-						TransmitInterval: pointer.Uint32Ptr(61),
-						EchoInterval:     pointer.Uint32Ptr(62),
-						EchoMode:         pointer.BoolPtr(false),
-						PassiveMode:      pointer.BoolPtr(false),
-						MinimumTTL:       pointer.Uint32Ptr(254),
+						ReceiveInterval:  ptr.To(uint32(60)),
+						TransmitInterval: ptr.To(uint32(61)),
+						EchoInterval:     ptr.To(uint32(62)),
+						EchoMode:         ptr.To(false),
+						PassiveMode:      ptr.To(false),
+						MinimumTTL:       ptr.To(uint32(254)),
 					},
 				}, ipfamily.IPv4, []string{v4PoolAddresses}, testservice.TrafficPolicyCluster),
 			ginkgo.Entry("IPV4 - echo mode enabled",
@@ -550,12 +550,12 @@ var _ = ginkgo.Describe("BGP", func() {
 						Name: "echo",
 					},
 					Spec: metallbv1beta1.BFDProfileSpec{
-						ReceiveInterval:  pointer.Uint32Ptr(80),
-						TransmitInterval: pointer.Uint32Ptr(81),
-						EchoInterval:     pointer.Uint32Ptr(82),
-						EchoMode:         pointer.BoolPtr(true),
-						PassiveMode:      pointer.BoolPtr(false),
-						MinimumTTL:       pointer.Uint32Ptr(254),
+						ReceiveInterval:  ptr.To(uint32(80)),
+						TransmitInterval: ptr.To(uint32(81)),
+						EchoInterval:     ptr.To(uint32(82)),
+						EchoMode:         ptr.To(true),
+						PassiveMode:      ptr.To(false),
+						MinimumTTL:       ptr.To(uint32(254)),
 					},
 				}, ipfamily.IPv4, []string{v4PoolAddresses}, testservice.TrafficPolicyCluster),
 			ginkgo.Entry("IPV6 - default",
@@ -570,12 +570,12 @@ var _ = ginkgo.Describe("BGP", func() {
 						Name: "full1",
 					},
 					Spec: metallbv1beta1.BFDProfileSpec{
-						ReceiveInterval:  pointer.Uint32Ptr(60),
-						TransmitInterval: pointer.Uint32Ptr(61),
-						EchoInterval:     pointer.Uint32Ptr(62),
-						EchoMode:         pointer.BoolPtr(false),
-						PassiveMode:      pointer.BoolPtr(false),
-						MinimumTTL:       pointer.Uint32Ptr(254),
+						ReceiveInterval:  ptr.To(uint32(60)),
+						TransmitInterval: ptr.To(uint32(61)),
+						EchoInterval:     ptr.To(uint32(62)),
+						EchoMode:         ptr.To(false),
+						PassiveMode:      ptr.To(false),
+						MinimumTTL:       ptr.To(uint32(254)),
 					},
 				}, ipfamily.IPv6, []string{v6PoolAddresses}, testservice.TrafficPolicyCluster),
 			ginkgo.Entry("DUALSTACK - full params",
@@ -584,12 +584,12 @@ var _ = ginkgo.Describe("BGP", func() {
 						Name: "full1",
 					},
 					Spec: metallbv1beta1.BFDProfileSpec{
-						ReceiveInterval:  pointer.Uint32Ptr(60),
-						TransmitInterval: pointer.Uint32Ptr(61),
-						EchoInterval:     pointer.Uint32Ptr(62),
-						EchoMode:         pointer.BoolPtr(false),
-						PassiveMode:      pointer.BoolPtr(false),
-						MinimumTTL:       pointer.Uint32Ptr(254),
+						ReceiveInterval:  ptr.To(uint32(60)),
+						TransmitInterval: ptr.To(uint32(61)),
+						EchoInterval:     ptr.To(uint32(62)),
+						EchoMode:         ptr.To(false),
+						PassiveMode:      ptr.To(false),
+						MinimumTTL:       ptr.To(uint32(254)),
 					},
 				}, ipfamily.DualStack, []string{v4PoolAddresses, v6PoolAddresses}, func(svc *corev1.Service) {
 					testservice.TrafficPolicyCluster(svc)
@@ -1277,12 +1277,12 @@ var _ = ginkgo.Describe("BGP", func() {
 					{
 						ObjectMeta: metav1.ObjectMeta{Name: "fullbfdprofile1"},
 						Spec: metallbv1beta1.BFDProfileSpec{
-							ReceiveInterval:  pointer.Uint32Ptr(93),
-							TransmitInterval: pointer.Uint32Ptr(95),
-							EchoInterval:     pointer.Uint32Ptr(97),
-							EchoMode:         pointer.BoolPtr(true),
-							PassiveMode:      pointer.BoolPtr(true),
-							MinimumTTL:       pointer.Uint32Ptr(253),
+							ReceiveInterval:  ptr.To(uint32(93)),
+							TransmitInterval: ptr.To(uint32(95)),
+							EchoInterval:     ptr.To(uint32(97)),
+							EchoMode:         ptr.To(true),
+							PassiveMode:      ptr.To(true),
+							MinimumTTL:       ptr.To(uint32(253)),
 						},
 					},
 				},
@@ -1343,6 +1343,41 @@ var _ = ginkgo.Describe("BGP", func() {
 			err = ConfigUpdater.Client().Get(context.Background(), types.NamespacedName{Name: "defaultport", Namespace: metallb.Namespace}, &peer)
 			framework.ExpectNoError(err)
 			framework.ExpectEqual(peer.Spec.Port, uint16(179))
+		})
+		// Until BGP peer connect time feature is added to frrk8s test is set to FRR-MODE:
+		ginkgo.It("FRR-MODE BGP Peer connect time", func() {
+			connectTime := time.Second * 5
+			resources := config.Resources{
+				Peers: metallb.PeersForContainers(FRRContainers, ipfamily.IPv4, func(p *metallbv1beta2.BGPPeer) {
+					p.Spec.ConnectTime = ptr.To(metav1.Duration{Duration: connectTime})
+				}),
+			}
+			err := ConfigUpdater.Update(resources)
+			framework.ExpectNoError(err)
+
+			speakerPods, err := metallb.SpeakerPods(cs)
+			framework.ExpectNoError(err)
+
+			for _, pod := range speakerPods {
+				podExec, err := FRRProvider.FRRExecutorFor(pod.Namespace, pod.Name)
+				framework.ExpectNoError(err)
+				Eventually(func() error {
+					neighbors, err := frr.NeighborsInfo(podExec)
+					if err != nil {
+						return err
+					}
+					if len(neighbors) == 0 {
+						return fmt.Errorf("expected at least 1 neighbor, got %d", len(neighbors))
+					}
+					for _, neighbor := range neighbors {
+						if neighbor.ConfiguredConnectTime != int(connectTime.Seconds()) {
+							return fmt.Errorf("expected connect time to be %d, got %d", int(connectTime.Seconds()), neighbor.ConfiguredConnectTime)
+						}
+					}
+					return nil
+				}, 2*time.Minute, time.Second).ShouldNot(HaveOccurred())
+			}
+
 		})
 	})
 	ginkgo.DescribeTable("A service of protocol load balancer should work with two protocols", func(pairingIPFamily ipfamily.Family, poolAddresses []string) {
