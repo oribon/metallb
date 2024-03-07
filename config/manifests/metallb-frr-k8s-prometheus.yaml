@@ -515,6 +515,11 @@ spec:
                     <= 65535
                 - message: connect time should contain a whole number of seconds
                   rule: duration(self).getMilliseconds() % 1000 == 0
+              disableMP:
+                default: false
+                description: To set if we want to disable MP BGP that will separate
+                  IPv4 and IPv6 route exchanges into distinct BGP sessions.
+                type: boolean
               ebgpMultiHop:
                 description: To set if the BGPPeer is multi-hops away. Needed for
                   FRR mode only.
@@ -847,6 +852,20 @@ spec:
                                   BGP session. If not set, the BFD session won't be
                                   set up.
                                 type: string
+                              connectTime:
+                                description: Requested BGP connect time, controls
+                                  how long BGP waits between connection attempts to
+                                  a neighbor.
+                                type: string
+                                x-kubernetes-validations:
+                                - message: connect time should be between 1 seconds
+                                    to 65535
+                                  rule: duration(self).getSeconds() >= 1 && duration(self).getSeconds()
+                                    <= 65535
+                                - message: connect time should contain a whole number
+                                    of seconds
+                                  rule: duration(self).getMilliseconds() % 1000 ==
+                                    0
                               ebgpMultiHop:
                                 description: EBGPMultiHop indicates if the BGPPeer
                                   is multi-hops away.
@@ -1146,11 +1165,6 @@ spec:
           status:
             description: FRRNodeStateStatus defines the observed state of FRRNodeState.
             properties:
-              desiredConfig:
-                description: DesiredConfig represents the desired FRR config, as the
-                  result of translating all of the `FRRConfiguration`s for the given
-                  node.
-                type: string
               lastConversionResult:
                 description: LastConversionResult is the status of the last translation
                   between the `FRRConfiguration`s resources and FRR's configuration,
@@ -1550,6 +1564,71 @@ spec:
             type: object
           status:
             description: L2AdvertisementStatus defines the observed state of L2Advertisement.
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.11.1
+  creationTimestamp: null
+  name: servicel2statuses.metallb.io
+spec:
+  group: metallb.io
+  names:
+    kind: ServiceL2Status
+    listKind: ServiceL2StatusList
+    plural: servicel2statuses
+    singular: servicel2status
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .status.node
+      name: Allocated Node
+      type: string
+    name: v1beta1
+    schema:
+      openAPIV3Schema:
+        description: ServiceL2Status reveals the actual traffic status of loadbalancer
+          services in layer2 mode.
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: ServiceL2StatusSpec defines the desired state of ServiceL2Status.
+            type: object
+          status:
+            description: MetalLBServiceL2Status defines the observed state of ServiceL2Status.
+            properties:
+              interfaces:
+                description: Interfaces indicates the interfaces that receive the
+                  directed traffic
+                items:
+                  description: InterfaceInfo defines interface info of layer2 announcement.
+                  properties:
+                    name:
+                      description: Name the name of network interface card
+                      type: string
+                  type: object
+                type: array
+              node:
+                description: Node indicates the node that receives the directed traffic
+                type: string
             type: object
         type: object
     served: true
@@ -2037,6 +2116,13 @@ rules:
   - tokenreviews
   verbs:
   - create
+- apiGroups:
+  - metallb.io
+  resources:
+  - servicel2statuses
+  - servicel2statuses/status
+  verbs:
+  - '*'
 - apiGroups:
   - ""
   resources:
@@ -2562,7 +2648,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        image: quay.io/metallb/frr-k8s:v0.0.4
+        image: quay.io/metallb/frr-k8s:v0.0.10
         imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:
@@ -2718,7 +2804,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        image: quay.io/metallb/frr-k8s:v0.0.4
+        image: quay.io/metallb/frr-k8s:v0.0.10
         imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:
@@ -2768,7 +2854,7 @@ spec:
         env:
         - name: TINI_SUBREAPER
           value: "true"
-        image: quay.io/frrouting/frr:8.4.2
+        image: quay.io/frrouting/frr:9.0.2
         livenessProbe:
           failureThreshold: 3
           httpGet:
@@ -2801,7 +2887,7 @@ spec:
         - --metrics-bind-address=127.0.0.1
         command:
         - /etc/frr_metrics/frr-metrics
-        image: quay.io/frrouting/frr:8.4.2
+        image: quay.io/frrouting/frr:9.0.2
         name: frr-metrics
         ports:
         - containerPort: 7573
@@ -2815,7 +2901,7 @@ spec:
           name: metrics
       - command:
         - /etc/frr_reloader/frr-reloader.sh
-        image: quay.io/frrouting/frr:8.4.2
+        image: quay.io/frrouting/frr:9.0.2
         name: reloader
         volumeMounts:
         - mountPath: /var/run/frr
@@ -2830,7 +2916,7 @@ spec:
         - /bin/sh
         - -c
         - cp -rLf /tmp/frr/* /etc/frr/
-        image: quay.io/frrouting/frr:8.4.2
+        image: quay.io/frrouting/frr:9.0.2
         name: cp-frr-files
         securityContext:
           runAsGroup: 101
@@ -2844,7 +2930,7 @@ spec:
         - /bin/sh
         - -c
         - cp -f /frr-reloader.sh /etc/frr_reloader/
-        image: quay.io/metallb/frr-k8s:v0.0.4
+        image: quay.io/metallb/frr-k8s:v0.0.10
         name: cp-reloader
         volumeMounts:
         - mountPath: /etc/frr_reloader
@@ -2853,7 +2939,7 @@ spec:
         - /bin/sh
         - -c
         - cp -f /frr-metrics /etc/frr_metrics/
-        image: quay.io/metallb/frr-k8s:v0.0.4
+        image: quay.io/metallb/frr-k8s:v0.0.10
         name: cp-metrics
         volumeMounts:
         - mountPath: /etc/frr_metrics

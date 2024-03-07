@@ -371,6 +371,54 @@ func TestTwoIPv6Sessions(t *testing.T) {
 	testCheckConfigFile(t)
 }
 
+func TestIPv4AndIPv6SessionsDisableMP(t *testing.T) {
+	testSetup(t)
+
+	l := log.NewNopLogger()
+	sessionManager := mockNewSessionManager(l, logging.LevelInfo)
+	defer close(sessionManager.reloadConfig)
+
+	session1, err := sessionManager.NewSession(l,
+		bgp.SessionParameters{
+			PeerAddress:   "[10:2:2::254]:179",
+			SourceAddress: net.ParseIP("10:1:1::254"),
+			MyASN:         100,
+			RouterID:      net.ParseIP("10.1.1.254"),
+			PeerASN:       200,
+			HoldTime:      time.Second,
+			KeepAliveTime: time.Second,
+			Password:      "password",
+			CurrentNode:   "hostname",
+			EBGPMultiHop:  false,
+			SessionName:   "test-peer1",
+			DisableMP:     true},
+	)
+	if err != nil {
+		t.Fatalf("Could not create session: %s", err)
+	}
+	defer session1.Close()
+	session2, err := sessionManager.NewSession(l,
+		bgp.SessionParameters{
+			PeerAddress:   "10.4.4.255:179",
+			SourceAddress: net.ParseIP("10.3.3.254"),
+			MyASN:         300,
+			RouterID:      net.ParseIP("10.3.3.254"),
+			PeerASN:       400,
+			HoldTime:      time.Second,
+			KeepAliveTime: time.Second,
+			Password:      "password",
+			CurrentNode:   "hostname",
+			EBGPMultiHop:  true,
+			SessionName:   "test-peer2",
+			DisableMP:     true})
+
+	if err != nil {
+		t.Fatalf("Could not create session: %s", err)
+	}
+	defer session2.Close()
+	testCheckConfigFile(t)
+}
+
 func TestTwoSessionsDuplicate(t *testing.T) {
 	testSetup(t)
 
@@ -1007,6 +1055,54 @@ func TestLargeCommunities(t *testing.T) {
 	}
 
 	err = session.Set(adv)
+	if err != nil {
+		t.Fatalf("Could not advertise prefix: %s", err)
+	}
+
+	testCheckConfigFile(t)
+}
+
+func TestManyAdvertisementsSameCommunity(t *testing.T) {
+	testSetup(t)
+
+	l := log.NewNopLogger()
+	sessionManager := mockNewSessionManager(l, logging.LevelInfo)
+	defer close(sessionManager.reloadConfig)
+	session, err := sessionManager.NewSession(l,
+		bgp.SessionParameters{
+			PeerAddress:   "10.2.2.254:179",
+			SourceAddress: net.ParseIP("10.1.1.254"),
+			MyASN:         100,
+			RouterID:      net.ParseIP("10.1.1.254"),
+			PeerASN:       200,
+			HoldTime:      time.Second,
+			KeepAliveTime: time.Second,
+			ConnectTime:   ptr.To(time.Second),
+			Password:      "password",
+			CurrentNode:   "hostname",
+			EBGPMultiHop:  true,
+			SessionName:   "test-peer"})
+	if err != nil {
+		t.Fatalf("Could not create session: %s", err)
+	}
+	defer session.Close()
+
+	community1, _ := community.New("1111:2222")
+	communities := []community.BGPCommunity{community1}
+	advs := []*bgp.Advertisement{}
+	for i := 0; i < 10; i++ {
+		prefix := &net.IPNet{
+			IP:   net.ParseIP(fmt.Sprintf("172.16.1.%d", i)),
+			Mask: classCMask,
+		}
+		adv := &bgp.Advertisement{
+			Prefix:      prefix,
+			Communities: communities,
+		}
+		advs = append(advs, adv)
+	}
+
+	err = session.Set(advs...)
 	if err != nil {
 		t.Fatalf("Could not advertise prefix: %s", err)
 	}

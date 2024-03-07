@@ -9,6 +9,9 @@ New features:
 
 - Bump FRR to 9.0.2 ([PR 2282](https://github.com/metallb/metallb/pull/2282), [Issue 2256](https://github.com/metallb/metallb/issues/2256))
 - Make the namse of webhook service and cert metallb specific to avoid name conflicts with other resources in the cluster. ([PR 2244](https://github.com/metallb/metallb/pull/2244), [Issue 2174](https://github.com/metallb/metallb/issues/2174)).
+New Features:
+
+- Provide a "ignore-exclude-lb" flag to ignore the `exclude-from-external-load-balancers` label ([PR 2280](https://github.com/metallb/metallb/pull/2280), [Issue 2274](https://github.com/metallb/metallb/issues/2274))
 
 BugFixes:
 
@@ -16,6 +19,7 @@ BugFixes:
 - Remove dangling AddressPool leftovers ([PR 2272](https://github.com/metallb/metallb/pull/2272) [Issue 2270](https://github.com/metallb/metallb/issues/2270))
 - Helm: fix the creation of the metrics-certs volume under the presence of the speakerMetricsTLSSecret value, regardless of FRR being enabled ([PR 2286](https://github.com/metallb/metallb/pull/2286))
 - Docs: remove outdated information about multiprotocol services ([PR 2228](https://github.com/metallb/metallb/pull/2228)).
+- FRR Config: generate the route-map for each local pref / community / large community only once ([PR 2292](https://github.com/metallb/metallb/pull/2292))
 
 Chores:
 
@@ -57,6 +61,7 @@ controller ([PR 2004](https://github.com/metallb/metallb/pull/2004), [Issue 1984
 - Implement NodeExcludeBalancers to exclude nodes as external loadbalancer ([PR 2073](https://github.com/metallb/metallb/pull/2073), [ISSUE 2021](https://github.com/metallb/metallb/issues/2021))
 - Metrics: add ipv4/6 addresses_in_use_total and addresses_total ([PR 2151](https://github.com/metallb/metallb/pull/2151))
 - E2E: Verify autoAssign=False works([PR 2264](https://github.com/metallb/metallb/pull/2264),[ISSUE 2221](https://github.com/metallb/metallb/issues/2221))
+- Implement ServiceL2Status CRD to expose service announcing status in layer2 mode ([PR 2198](https://github.com/metallb/metallb/pull/2198))
 
 Bug Fixes:
 
