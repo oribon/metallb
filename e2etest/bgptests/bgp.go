@@ -1344,8 +1344,7 @@ var _ = ginkgo.Describe("BGP", func() {
 			framework.ExpectNoError(err)
 			framework.ExpectEqual(peer.Spec.Port, uint16(179))
 		})
-		// Until BGP peer connect time feature is added to frrk8s test is set to FRR-MODE:
-		ginkgo.It("FRR-MODE BGP Peer connect time", func() {
+		ginkgo.It("BGP Peer connect time", func() {
 			connectTime := time.Second * 5
 			resources := config.Resources{
 				Peers: metallb.PeersForContainers(FRRContainers, ipfamily.IPv4, func(p *metallbv1beta2.BGPPeer) {
@@ -1372,6 +1371,43 @@ var _ = ginkgo.Describe("BGP", func() {
 					for _, neighbor := range neighbors {
 						if neighbor.ConfiguredConnectTime != int(connectTime.Seconds()) {
 							return fmt.Errorf("expected connect time to be %d, got %d", int(connectTime.Seconds()), neighbor.ConfiguredConnectTime)
+						}
+					}
+					return nil
+				}, 2*time.Minute, time.Second).ShouldNot(HaveOccurred())
+			}
+
+		})
+		ginkgo.It("FRR-MODE BGP Peer disable MP BGP", func() {
+			resources := config.Resources{
+				Peers: metallb.PeersForContainers(FRRContainers, ipfamily.DualStack, func(p *metallbv1beta2.BGPPeer) {
+					p.Spec.DisableMP = true
+				}),
+			}
+
+			err := ConfigUpdater.Update(resources)
+			framework.ExpectNoError(err)
+
+			speakerPods, err := metallb.SpeakerPods(cs)
+			framework.ExpectNoError(err)
+
+			for _, pod := range speakerPods {
+				podExec, err := FRRProvider.FRRExecutorFor(pod.Namespace, pod.Name)
+				framework.ExpectNoError(err)
+				Eventually(func() error {
+					neighbors, err := frr.NeighborsInfo(podExec)
+					if err != nil {
+						return err
+					}
+					if len(neighbors) == 0 {
+						return fmt.Errorf("expected at least 1 neighbor, got %d", len(neighbors))
+					}
+					for _, neighbor := range neighbors {
+						neighborFamily := ipfamily.ForAddress(neighbor.IP)
+						for _, family := range neighbor.AddressFamilies {
+							if !strings.Contains(family, string(neighborFamily)) {
+								return fmt.Errorf("expected %s neigbour to contain only %s families but contains %s", neighbor.IP, neighborFamily, family)
+							}
 						}
 					}
 					return nil

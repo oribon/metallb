@@ -181,6 +181,8 @@ _Appears in:_
 | `serviceAllocation` _[ServiceAllocation](#serviceallocation)_ | AllocateTo makes ip pool allocation to specific namespace and/or service. The controller will use the pool with lowest value of priority in case of multiple matches. A pool with no priority set will be used only if the pools with priority can't be used. If multiple matching IPAddressPools are available it will check for the availability of IPs sorting the matching IPAddressPools by priority, starting from the highest to the lowest. If multiple IPAddressPools have the same priority, choice will be random. |
 
 
+
+
 #### L2Advertisement
 
 
@@ -231,6 +233,8 @@ _Appears in:_
 | `namespaces` _string array_ | Namespaces list of namespace(s) on which ip pool can be attached. |
 | `namespaceSelectors` _[LabelSelector](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#labelselector-v1-meta) array_ | NamespaceSelectors list of label selectors to select namespace(s) for ip pool, an alternative to using namespace list. |
 | `serviceSelectors` _[LabelSelector](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#labelselector-v1-meta) array_ | ServiceSelectors list of label selector to select service(s) for which ip pool can be used for ip allocation. |
+
+
 
 
 
@@ -287,5 +291,6 @@ _Appears in:_
 | `bfdProfile` _string_ | The name of the BFD Profile to be used for the BFD session associated to the BGP session. If not set, the BFD session won't be set up. |
 | `ebgpMultiHop` _boolean_ | To set if the BGPPeer is multi-hops away. Needed for FRR mode only. |
 | `vrf` _string_ | To set if we want to peer with the BGPPeer using an interface belonging to a host vrf |
+| `disableMP` _boolean_ | To set if we want to disable MP BGP that will separate IPv4 and IPv6 route exchanges into distinct BGP sessions. |
 
 
