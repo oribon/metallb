@@ -22,9 +22,9 @@ rm -rf metallb-operator-deploy/manifests
 rm -rf metallb-operator-deploy/bundle
 rm metallb-operator-deploy/bundleci.Dockerfile
 
-cp metallb-operator/bundleci.Dockerfile metallb-operator-deploy 
-cp -r metallb-operator/manifests/ metallb-operator-deploy/manifests 
-cp -r metallb-operator/bundle/ metallb-operator-deploy/bundle 
+cp metallb-operator/bundleci.Dockerfile metallb-operator-deploy
+cp -r metallb-operator/manifests/ metallb-operator-deploy/manifests
+cp -r metallb-operator/bundle/ metallb-operator-deploy/bundle
 
 cd metallb-operator-deploy
 
@@ -97,7 +97,7 @@ oc exec -n openshift-marketplace buildindex /tmp/metallb-operator-deploy/build_a
 oc apply -f metallb-operator-deploy/install-resources.yaml
 
 # there is a race in the creation of the pod and the service account that prevents
-# the index image to be pulled. Here we check if the pod is not running and we kill it. 
+# the index image to be pulled. Here we check if the pod is not running and we kill it.
 success=0
 iterations=0
 sleep_time=10
@@ -129,6 +129,18 @@ fi
 oc label ns openshift-marketplace --overwrite pod-security.kubernetes.io/enforce=baseline
 oc label ns metallb-system openshift.io/cluster-monitoring=true
 
+if [[ "$BGP_TYPE" == "frr-k8s" ]]; then
+oc apply -f - <<EOF
+apiVersion: metallb.io/v1beta1
+kind: MetalLB
+metadata:
+  name: metallb
+  namespace: metallb-system
+spec:
+  logLevel: debug
+  bgpBackend: frr-k8s
+EOF
+else
 oc apply -f - <<EOF
 apiVersion: metallb.io/v1beta1
 kind: MetalLB
@@ -138,6 +150,7 @@ metadata:
 spec:
   logLevel: debug
 EOF
+fi
 
 NAMESPACE="metallb-system"
 ATTEMPTS=0
