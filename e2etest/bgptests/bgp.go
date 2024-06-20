@@ -20,6 +20,7 @@ package bgptests
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -58,6 +59,9 @@ const (
 	CommunityNoAdv        = "65535:65282" // 0xFFFFFF02: NO_ADVERTISE
 	CommunityGracefulShut = "65535:0"     // GRACEFUL_SHUTDOWN
 	SpeakerContainerName  = "speaker"
+
+	GracefulRestartEnabled  = true
+	GracefulRestartDisabled = false
 )
 
 var (
@@ -130,7 +134,6 @@ var _ = ginkgo.Describe("BGP", func() {
 		}
 	},
 		ginkgo.Entry("IPV4", ipfamily.IPv4, []string{v4PoolAddresses}, func(_ *corev1.Service) {}),
-		ginkgo.Entry("IPV4", ipfamily.IPv4, []string{v4PoolAddresses}, func(_ *corev1.Service) {}),
 		ginkgo.Entry("IPV6", ipfamily.IPv6, []string{v6PoolAddresses}, func(_ *corev1.Service) {}),
 		ginkgo.Entry("DUALSTACK", ipfamily.DualStack, []string{v4PoolAddresses, v6PoolAddresses},
 			func(svc *corev1.Service) {
@@ -146,6 +149,117 @@ var _ = ginkgo.Describe("BGP", func() {
 				testservice.WithSpecificIPs(svc, "192.168.10.100", "fc00:f853:ccd:e799::")
 			}),
 	)
+
+	ginkgo.Describe("GracefulRestart, when speakers restart", func() {
+
+		ginkgo.AfterEach(func() {
+			for _, c := range FRRContainers {
+				c.NeighborConfig.GracefulRestart = false
+			}
+		})
+
+		assertDuringSpeakerRestart := func(gracefulRestart bool, pairingIPFamily ipfamily.Family, poolAddresses []string, tweak testservice.Tweak) {
+			_, svc := setupBGPService(cs, testNamespace, pairingIPFamily, poolAddresses,
+				FRRContainers, func(svc *corev1.Service) {
+					testservice.TrafficPolicyCluster(svc)
+					tweak(svc)
+				})
+			defer testservice.Delete(cs, svc)
+
+			allNodes, err := cs.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
+			Expect(err).NotTo(HaveOccurred())
+			testservice.ValidateDesiredLB(svc)
+
+			for _, c := range FRRContainers {
+				validateService(svc, allNodes.Items, c)
+			}
+			err = metallb.RestartSpeakerPods(cs)
+			Expect(err).NotTo(HaveOccurred())
+
+			if gracefulRestart == GracefulRestartDisabled {
+				Eventually(func() error {
+					for _, c := range FRRContainers {
+						err := validateServiceNoWait(svc, allNodes.Items, c)
+						if errors.Is(err, ErrStaleRoute) {
+							Expect(err).NotTo(HaveOccurred(),
+								"a stale route cannot be observed if GR disabled")
+						}
+						if err != nil {
+							return err
+						}
+					}
+					return nil
+				}, 2*time.Minute, time.Second).Should(HaveOccurred(), "a downtime should be observed")
+				return
+			}
+
+			Eventually(func() error {
+				for _, c := range FRRContainers {
+					err := validateServiceNoWait(svc, allNodes.Items, c)
+					if errors.Is(err, ErrStaleRoute) {
+						continue // when GR, is normal to observe stale routes
+					}
+					Expect(err).NotTo(HaveOccurred(), "downtime was observed")
+				}
+
+				pods, err := metallb.SpeakerPods(cs)
+				if err != nil {
+					return err
+				}
+
+				for _, p := range pods {
+					if !k8s.PodIsReady(p) {
+						return fmt.Errorf("speaker pods are not ready")
+					}
+				}
+
+				return nil
+			}, 2*time.Minute, time.Second).ShouldNot(HaveOccurred(), "no downtime until speakers are ready")
+
+			for _, c := range FRRContainers {
+				validateService(svc, allNodes.Items, c)
+			}
+		}
+
+		ginkgo.Context("and when GR enabled", func() {
+
+			assertDuringSpeakerRestartWithGR := func(pairingIPFamily ipfamily.Family, poolAddresses []string, tweak testservice.Tweak) {
+				assertDuringSpeakerRestart(GracefulRestartEnabled, pairingIPFamily, poolAddresses, tweak)
+			}
+
+			ginkgo.BeforeEach(func() {
+				for _, c := range FRRContainers {
+					c.NeighborConfig.GracefulRestart = true
+				}
+			})
+
+			ginkgo.DescribeTable("dataplane should keep working", assertDuringSpeakerRestartWithGR,
+				ginkgo.Entry("FRR-MODE IPV4", ipfamily.IPv4, []string{v4PoolAddresses}, func(_ *corev1.Service) {}),
+				ginkgo.Entry("FRR-MODE IPV6", ipfamily.IPv6, []string{v6PoolAddresses}, func(_ *corev1.Service) {}),
+				ginkgo.Entry("FRR-MODE DUALSTACK", ipfamily.DualStack, []string{v4PoolAddresses, v6PoolAddresses},
+					func(svc *corev1.Service) { testservice.DualStack(svc) }),
+			)
+		})
+
+		ginkgo.Context("when GR disabled", func() {
+			assertDuringSpeakerRestartWithoutGR := func(pairingIPFamily ipfamily.Family, poolAddresses []string, tweak testservice.Tweak) {
+				assertDuringSpeakerRestart(GracefulRestartDisabled, pairingIPFamily, poolAddresses, tweak)
+			}
+
+			ginkgo.BeforeEach(func() {
+				for _, c := range FRRContainers {
+					c.NeighborConfig.GracefulRestart = false
+				}
+			})
+
+			ginkgo.DescribeTable("dataplane should have a downtime", assertDuringSpeakerRestartWithoutGR,
+				ginkgo.Entry("FRR-MODE IPV4", ipfamily.IPv4, []string{v4PoolAddresses}, func(_ *corev1.Service) {}),
+				ginkgo.Entry("FRR-MODE IPV6", ipfamily.IPv6, []string{v6PoolAddresses}, func(_ *corev1.Service) {}),
+				ginkgo.Entry("FRR-MODE DUALSTACK", ipfamily.DualStack, []string{v4PoolAddresses, v6PoolAddresses},
+					func(svc *corev1.Service) { testservice.DualStack(svc) }),
+			)
+		})
+	})
 
 	ginkgo.Describe("Service with ETP=cluster", func() {
 		ginkgo.It("IPV4 - should not be announced from a node with a NetworkUnavailable condition", func() {
@@ -421,6 +535,33 @@ var _ = ginkgo.Describe("BGP", func() {
 			Expect(err).NotTo(HaveOccurred())
 			for _, n := range neighbors {
 				Expect(n.RemoteRouterID).To(Equal("10.10.10.1"))
+			}
+		}
+	},
+		ginkgo.Entry("IPV4", ipfamily.IPv4),
+		ginkgo.Entry("IPV6", ipfamily.IPv6))
+
+	ginkgo.DescribeTable("FRR-MODE configure peers with GracefulRestart and validate external containers are paired with nodes", func(ipFamily ipfamily.Family) {
+		ginkgo.By("configure peer")
+
+		resources := config.Resources{
+			Peers: metallb.WithGracefulRestart(metallb.PeersForContainers(FRRContainers, ipFamily)),
+		}
+
+		err := ConfigUpdater.Update(resources)
+		Expect(err).NotTo(HaveOccurred())
+
+		for _, c := range FRRContainers {
+			err = frrcontainer.PairWithNodes(cs, c, ipFamily)
+			Expect(err).NotTo(HaveOccurred())
+		}
+
+		for _, c := range FRRContainers {
+			validateFRRPeeredWithAllNodes(cs, c, ipFamily)
+			neighbors, err := frr.NeighborsInfo(c)
+			Expect(err).NotTo(HaveOccurred())
+			for _, n := range neighbors {
+				Expect(n.GRInfo.RemoteGrMode).To(Equal("Restart"))
 			}
 		}
 	},
@@ -1342,11 +1483,12 @@ var _ = ginkgo.Describe("BGP", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(peer.Spec.Port).To(Equal(uint16(179)))
 		})
-		ginkgo.It("BGP Peer connect time", func() {
+		ginkgo.It("BGP Peer parameters", func() {
 			connectTime := time.Second * 5
 			resources := config.Resources{
 				Peers: metallb.PeersForContainers(FRRContainers, ipfamily.IPv4, func(p *metallbv1beta2.BGPPeer) {
 					p.Spec.ConnectTime = ptr.To(metav1.Duration{Duration: connectTime})
+					p.Spec.DisableMP = true
 				}),
 			}
 			err := ConfigUpdater.Update(resources)
@@ -1370,37 +1512,7 @@ var _ = ginkgo.Describe("BGP", func() {
 						if neighbor.ConfiguredConnectTime != int(connectTime.Seconds()) {
 							return fmt.Errorf("expected connect time to be %d, got %d", int(connectTime.Seconds()), neighbor.ConfiguredConnectTime)
 						}
-					}
-					return nil
-				}, 2*time.Minute, time.Second).ShouldNot(HaveOccurred())
-			}
 
-		})
-		ginkgo.It("FRR-MODE BGP Peer disable MP BGP", func() {
-			resources := config.Resources{
-				Peers: metallb.PeersForContainers(FRRContainers, ipfamily.DualStack, func(p *metallbv1beta2.BGPPeer) {
-					p.Spec.DisableMP = true
-				}),
-			}
-
-			err := ConfigUpdater.Update(resources)
-			Expect(err).NotTo(HaveOccurred())
-
-			speakerPods, err := metallb.SpeakerPods(cs)
-			Expect(err).NotTo(HaveOccurred())
-
-			for _, pod := range speakerPods {
-				podExec, err := FRRProvider.FRRExecutorFor(pod.Namespace, pod.Name)
-				Expect(err).NotTo(HaveOccurred())
-				Eventually(func() error {
-					neighbors, err := frr.NeighborsInfo(podExec)
-					if err != nil {
-						return err
-					}
-					if len(neighbors) == 0 {
-						return fmt.Errorf("expected at least 1 neighbor, got %d", len(neighbors))
-					}
-					for _, neighbor := range neighbors {
 						neighborFamily := ipfamily.ForAddress(neighbor.IP)
 						for _, family := range neighbor.AddressFamilies {
 							if !strings.Contains(family, string(neighborFamily)) {

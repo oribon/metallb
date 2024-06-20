@@ -244,11 +244,13 @@ spec:
                             items:
                               type: string
                             type: array
+                            x-kubernetes-list-type: atomic
                         required:
                         - key
                         - operator
                         type: object
                       type: array
+                      x-kubernetes-list-type: atomic
                     matchLabels:
                       additionalProperties:
                         type: string
@@ -308,11 +310,13 @@ spec:
                             items:
                               type: string
                             type: array
+                            x-kubernetes-list-type: atomic
                         required:
                         - key
                         - operator
                         type: object
                       type: array
+                      x-kubernetes-list-type: atomic
                     matchLabels:
                       additionalProperties:
                         type: string
@@ -552,6 +556,16 @@ spec:
                 description: To set if the BGPPeer is multi-hops away. Needed for
                   FRR mode only.
                 type: boolean
+              enableGracefulRestart:
+                description: |-
+                  EnableGracefulRestart allows BGP peer to continue to forward data packets along
+                  known routes while the routing protocol information is being restored.
+                  This field is immutable because it requires restart of the BGP session
+                  Supported for FRR mode only.
+                type: boolean
+                x-kubernetes-validations:
+                - message: EnableGracefulRestart cannot be changed after creation
+                  rule: self == oldSelf
               holdTime:
                 description: Requested BGP hold time, per RFC4271.
                 type: string
@@ -600,11 +614,13 @@ spec:
                             items:
                               type: string
                             type: array
+                            x-kubernetes-list-type: atomic
                         required:
                         - key
                         - operator
                         type: object
                       type: array
+                      x-kubernetes-list-type: atomic
                     matchLabels:
                       additionalProperties:
                         type: string
@@ -901,6 +917,12 @@ spec:
                                     of seconds
                                   rule: duration(self).getMilliseconds() % 1000 ==
                                     0
+                              disableMP:
+                                default: false
+                                description: To set if we want to disable MP BGP that
+                                  will separate IPv4 and IPv6 route exchanges into
+                                  distinct BGP sessions.
+                                type: boolean
                               ebgpMultiHop:
                                 description: EBGPMultiHop indicates if the BGPPeer
                                   is multi-hops away.
@@ -1340,11 +1362,13 @@ spec:
                                 items:
                                   type: string
                                 type: array
+                                x-kubernetes-list-type: atomic
                             required:
                             - key
                             - operator
                             type: object
                           type: array
+                          x-kubernetes-list-type: atomic
                         matchLabels:
                           additionalProperties:
                             type: string
@@ -1402,11 +1426,13 @@ spec:
                                 items:
                                   type: string
                                 type: array
+                                x-kubernetes-list-type: atomic
                             required:
                             - key
                             - operator
                             type: object
                           type: array
+                          x-kubernetes-list-type: atomic
                         matchLabels:
                           additionalProperties:
                             type: string
@@ -1532,11 +1558,13 @@ spec:
                             items:
                               type: string
                             type: array
+                            x-kubernetes-list-type: atomic
                         required:
                         - key
                         - operator
                         type: object
                       type: array
+                      x-kubernetes-list-type: atomic
                     matchLabels:
                       additionalProperties:
                         type: string
@@ -1590,11 +1618,13 @@ spec:
                             items:
                               type: string
                             type: array
+                            x-kubernetes-list-type: atomic
                         required:
                         - key
                         - operator
                         type: object
                       type: array
+                      x-kubernetes-list-type: atomic
                     matchLabels:
                       additionalProperties:
                         type: string
@@ -2579,7 +2609,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        image: quay.io/metallb/frr-k8s:v0.0.10
+        image: quay.io/metallb/frr-k8s:v0.0.11
         imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:
@@ -2735,7 +2765,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        image: quay.io/metallb/frr-k8s:v0.0.10
+        image: quay.io/metallb/frr-k8s:v0.0.11
         imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:
@@ -2861,7 +2891,7 @@ spec:
         - /bin/sh
         - -c
         - cp -f /frr-reloader.sh /etc/frr_reloader/
-        image: quay.io/metallb/frr-k8s:v0.0.10
+        image: quay.io/metallb/frr-k8s:v0.0.11
         name: cp-reloader
         volumeMounts:
         - mountPath: /etc/frr_reloader
@@ -2870,7 +2900,7 @@ spec:
         - /bin/sh
         - -c
         - cp -f /frr-metrics /etc/frr_metrics/
-        image: quay.io/metallb/frr-k8s:v0.0.10
+        image: quay.io/metallb/frr-k8s:v0.0.11
         name: cp-metrics
         volumeMounts:
         - mountPath: /etc/frr_metrics
