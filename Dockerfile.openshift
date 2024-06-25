@@ -8,6 +8,9 @@ ADD . /metallb
 WORKDIR /metallb/frr-tools/metrics
 RUN CGO_ENABLED=0 GO111MODULE=on go build -mod=vendor -o ./frr-metrics
 
+WORKDIR /metallb/frr-tools/cp-tool
+RUN CGO_ENABLED=0 GO111MODULE=on go build -mod=vendor -o ./cp-tool
+
 WORKDIR /metallb/controller
 RUN export SOURCE_GIT_COMMIT="${SOURCE_GIT_COMMIT:-$(git rev-parse --verify 'HEAD^{commit}')}" && \
       export GIT_BRANCH="${GIT_BRANCH:-$(git rev-parse --abbrev-ref HEAD)}" && \
@@ -24,7 +27,8 @@ RUN export SOURCE_GIT_COMMIT="${SOURCE_GIT_COMMIT:-$(git rev-parse --verify 'HEA
 
 FROM registry.ci.openshift.org/ocp/builder:rhel-9-base-openshift-4.17
 COPY --from=builder /metallb/controller/controller /metallb/speaker/speaker \
-      /metallb/frr-tools/reloader/frr-reloader.sh /metallb/frr-tools/metrics/frr-metrics /
+      /metallb/frr-tools/reloader/frr-reloader.sh /metallb/frr-tools/metrics/frr-metrics \
+      /metallb/frr-tools/cp-tool/cp-tool /
 
 # When running as non root and building in an environment that `umask` masks out
 # '+x' for others, it won't be possible to execute. Make sure all can execute,

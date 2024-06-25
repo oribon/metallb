@@ -6,3 +6,4 @@ exclude:
     - vendor/**
     - "**/*_test.go"
     - "e2etest/**"
+    - website/**

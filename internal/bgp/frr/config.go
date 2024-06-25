@@ -13,9 +13,10 @@ import (
 	"text/template"
 	"time"
 
+	"errors"
+
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
-	"github.com/pkg/errors"
 	"go.universe.tf/metallb/internal/ipfamily"
 )
 
@@ -75,6 +76,7 @@ type neighborConfig struct {
 	Password            string
 	Advertisements      []*advertisementConfig
 	BFDProfile          string
+	GracefulRestart     bool
 	EBGPMultiHop        bool
 	VRFName             string
 	HasV4Advertisements bool
@@ -182,7 +184,7 @@ func templateConfig(data interface{}) (string, error) {
 	return b.String(), err
 }
 
-// writeConfigFile writes the FRR configuration file (represented as a string)
+// writeConfig writes the FRR configuration file (represented as a string)
 // to 'filename'.
 func writeConfig(config string, filename string) error {
 	return os.WriteFile(filename, []byte(config), 0600)
