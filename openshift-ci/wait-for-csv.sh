@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 VERSION="v0.0.0"
 CSV_NAME="metallb-operator.${VERSION}"
