@@ -2,6 +2,7 @@
 set -euo pipefail
 
 metallb_dir="$(dirname $(readlink -f $0))"
+git log -1 || true # just printing commit in the test output
 source ${metallb_dir}/common.sh
 
 METALLB_OPERATOR_REPO=${METALLB_OPERATOR_REPO:-"https://github.com/openshift/metallb-operator.git"}
@@ -14,10 +15,11 @@ BGP_TYPE=${BGP_TYPE:-""}
 export NAMESPACE=${NAMESPACE:-"metallb-system"}
 
 if [ ! -d ./metallb-operator ]; then
-	git clone ${METALLB_OPERATOR_REPO}
-	cd metallb-operator
-	git checkout ${METALLB_OPERATOR_BRANCH}
-	cd -
+  git clone ${METALLB_OPERATOR_REPO}
+  cd metallb-operator
+  git checkout ${METALLB_OPERATOR_BRANCH}
+  git log -1 || true # just printing commit in the test output
+  cd -
 fi
 
 rm -rf metallb-operator-deploy/manifests
