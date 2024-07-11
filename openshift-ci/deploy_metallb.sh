@@ -10,6 +10,7 @@ METALLB_IMAGE_BASE=${METALLB_IMAGE_BASE:-$(echo "${OPENSHIFT_RELEASE_IMAGE}" | s
 METALLB_IMAGE_TAG=${METALLB_IMAGE_TAG:-"metallb"}
 METALLB_OPERATOR_IMAGE_TAG=${METALLB_OPERATOR_IMAGE_TAG:-"metallb-operator"}
 FRR_IMAGE_TAG=${FRR_IMAGE_TAG:-"metallb-frr"}
+BGP_TYPE=${BGP_TYPE:-""}
 export NAMESPACE=${NAMESPACE:-"metallb-system"}
 
 if [ ! -d ./metallb-operator ]; then
@@ -21,7 +22,7 @@ fi
 
 rm -rf metallb-operator-deploy/manifests
 rm -rf metallb-operator-deploy/bundle
-rm metallb-operator-deploy/bundleci.Dockerfile
+rm -rf metallb-operator-deploy/bundleci.Dockerfile
 
 cp metallb-operator/bundleci.Dockerfile metallb-operator-deploy
 cp -r metallb-operator/manifests/ metallb-operator-deploy/manifests
@@ -159,7 +160,7 @@ ATTEMPTS=0
 while [[ -z $(oc get endpoints -n $NAMESPACE webhook-service -o jsonpath="{.subsets[0].addresses}" 2>/dev/null) ]]; do
   echo "still waiting for webhookservice endpoints"
   sleep 10
-  (( ATTEMPTS++ ))
+  ATTEMPTS=$((ATTEMPTS+1))
   if [ $ATTEMPTS -eq 30 ]; then
         echo "failed waiting for webhookservice endpoints"
         exit 1

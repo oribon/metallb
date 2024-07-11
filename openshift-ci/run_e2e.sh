@@ -1,9 +1,12 @@
 #!/usr/bin/bash
+set -euo pipefail
 
 metallb_dir="$(dirname $(readlink -f $0))"
 source ${metallb_dir}/common.sh
 
 METALLB_REPO=${METALLB_REPO:-"https://github.com/openshift/metallb.git"}
+BGP_TYPE=${BGP_TYPE:-""}
+IP_STACK=${IP_STACK:-""}
 
 # add firewalld rules
 sudo firewall-cmd --zone=libvirt --permanent --add-port=179/tcp
