@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 yum install jq git wget -y
 cd /tmp/metallb-operator-deploy
