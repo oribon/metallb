@@ -149,6 +149,7 @@ metadata:
   namespace: metallb-system
 spec:
   logLevel: debug
+  bgpBackend: frr
 EOF
 fi
 
