@@ -444,7 +444,7 @@ apiServer:
 
     frr_k8s_ns = "frr-k8s-system"
     if bgp_type == "frr-k8s-external":
-        run("{} apply -f https://raw.githubusercontent.com/metallb/frr-k8s/v0.0.11/config/all-in-one/frr-k8s.yaml".format(kubectl_path), echo=True)
+        run("{} apply -f https://raw.githubusercontent.com/metallb/frr-k8s/v0.0.13/config/all-in-one/frr-k8s.yaml".format(kubectl_path), echo=True)
         time.sleep(2)
         run("{} -n {} wait --for=condition=Ready --all pods --timeout 300s".format(kubectl_path, frr_k8s_ns), echo=True)
 
@@ -590,7 +590,7 @@ def bgp_dev_env(ip_family, frr_volume_dir):
         '    docker rm -f $frr ; '
         'done', echo=True)
     run("docker run -d --privileged --network kind --rm --ulimit core=-1 --name frr --volume %s:/etc/frr "
-        "quay.io/frrouting/frr:9.0.2" % frr_volume_dir, echo=True)
+        "quay.io/frrouting/frr:9.1.0" % frr_volume_dir, echo=True)
 
     if ip_family == "ipv4":
         peer_address = run('docker inspect -f "{{ '
