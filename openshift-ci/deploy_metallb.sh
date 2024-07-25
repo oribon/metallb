@@ -9,6 +9,8 @@ METALLB_OPERATOR_REPO=${METALLB_OPERATOR_REPO:-"https://github.com/openshift/met
 METALLB_OPERATOR_BRANCH=${METALLB_OPERATOR_BRANCH:-"main"}
 METALLB_IMAGE_BASE=${METALLB_IMAGE_BASE:-$(echo "${OPENSHIFT_RELEASE_IMAGE}" | sed -e 's/release/stable/g' | sed -e 's/@.*$//g')}
 METALLB_IMAGE_TAG=${METALLB_IMAGE_TAG:-"metallb"}
+KUBERBAC_IMAGE_BASE=${KUBERBAC_IMAGE_BASE:-$(echo "${OPENSHIFT_RELEASE_IMAGE}" | sed -e 's/release/stable/g' | sed -e 's/@.*$//g')}
+KUBERBAC_IMAGE_TAG=${KUBERBAC_IMAGE_TAG:-"kube-rbac-proxy"}
 METALLB_OPERATOR_IMAGE_TAG=${METALLB_OPERATOR_IMAGE_TAG:-"metallb-operator"}
 FRR_IMAGE_TAG=${FRR_IMAGE_TAG:-"metallb-frr"}
 BGP_TYPE=${BGP_TYPE:-""}
@@ -38,6 +40,8 @@ ESCAPED_FRR_IMAGE=$(printf '%s\n' "${METALLB_IMAGE_BASE}:${FRR_IMAGE_TAG}" | sed
 find . -type f -name "*clusterserviceversion*.yaml" -exec sed -i 's/quay.io\/openshift\/origin-metallb-frr:.*$/'"$ESCAPED_FRR_IMAGE"'/g' {} +
 ESCAPED_OPERATOR_IMAGE=$(printf '%s\n' "${METALLB_IMAGE_BASE}:${METALLB_OPERATOR_IMAGE_TAG}" | sed -e 's/[]\/$*.^[]/\\&/g');
 find . -type f -name "*clusterserviceversion*.yaml" -exec sed -i 's/quay.io\/openshift\/origin-metallb-operator:.*$/'"$ESCAPED_OPERATOR_IMAGE"'/g' {} +
+ESCAPED_KUBERBAC_IMAGE=$(printf '%s\n' "${KUBERBAC_IMAGE_BASE}:${KUBERBAC_IMAGE_TAG}" | sed -e 's/[]\/$*.^[]/\\&/g');
+find . -type f -name "*clusterserviceversion*.yaml" -exec sed -i 's/quay.io\/openshift\/origin-kube-rbac-proxy:.*$/'"$ESCAPED_KUBERBAC_IMAGE"'/g' {} +
 find . -type f -name "*clusterserviceversion*.yaml" -exec sed -r -i 's/name: metallb-operator\..*$/name: metallb-operator.v0.0.0/g' {} +
 
 cd -
