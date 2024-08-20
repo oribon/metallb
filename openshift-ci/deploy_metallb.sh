@@ -146,7 +146,6 @@ metadata:
   namespace: metallb-system
 spec:
   logLevel: debug
-  bgpBackend: frr-k8s
 EOF
 else
 oc apply -f - <<EOF
