@@ -23,7 +23,7 @@ sudo firewall-cmd --zone=libvirt --add-port=3785/udp
 sudo firewall-cmd --zone=libvirt --permanent --add-port=4784/udp
 sudo firewall-cmd --zone=libvirt --add-port=4784/udp
 
-if [[ "$BGP_TYPE" == "frr-k8s" ]]; then
+if [[ "$BGP_TYPE" == "frr-k8s" || "$BGP_TYPE" == "frr-k8s-cno" ]]; then
 	MODE_TO_SKIP="FRR-MODE"
 	BGP_MODE="frr-k8s"
 else

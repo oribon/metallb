@@ -1,0 +1,4 @@
+                      - name: FRRK8S_EXTERNAL_NAMESPACE
+                        value: "openshift-frr-k8s"
+                      - name: DEPLOY_FRRK8S_FROM_CNO
+                        value: "true"
