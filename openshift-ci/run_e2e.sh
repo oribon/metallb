@@ -70,7 +70,7 @@ inv e2etest --kubeconfig=$(readlink -f ../../ocp/ostest/auth/kubeconfig) \
 
 oc wait --for=delete namespace/metallb-system-other --timeout=2m || true # making sure the namespace is deleted (should happen in aftersuite)
 
-FOCUS_EBGP="BGP.*A service of protocol load balancer should work with.*IPV4 - ExternalTrafficPolicyCluster$" # Just a smoke test to make sure ebgp works
+FOCUS_EBGP="BGP A service of protocol load balancer should work with ETP=cluster IPV4" # Just a smoke test to make sure ebgp works
 
 inv e2etest --kubeconfig=$(readlink -f ../../ocp/ostest/auth/kubeconfig) \
 	--service-pod-port=8080 --system-namespaces="metallb-system" --skip-docker \
