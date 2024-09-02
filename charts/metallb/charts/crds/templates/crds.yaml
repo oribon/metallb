@@ -365,6 +365,8 @@ spec:
         - jsonPath: .spec.ebgpMultiHop
           name: Multi Hops
           type: string
+      deprecated: true
+      deprecationWarning: v1beta1 is deprecated, please use v1beta2
       name: v1beta1
       schema:
         openAPIV3Schema:
@@ -1189,8 +1191,6 @@ spec:
                   description: ServiceName indicates the service this status represents
                   type: string
                   x-kubernetes-validations:
-                    - message: Value is immutable
-                      rule: self == oldSelf
                     - message: Value is immutable
                       rule: self == oldSelf
                 serviceNamespace:
