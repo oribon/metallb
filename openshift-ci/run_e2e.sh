@@ -23,7 +23,7 @@ sudo firewall-cmd --zone=libvirt --add-port=3785/udp
 sudo firewall-cmd --zone=libvirt --permanent --add-port=4784/udp
 sudo firewall-cmd --zone=libvirt --add-port=4784/udp
 
-if [[ "$BGP_TYPE" == "frr-k8s" ]]; then
+if [[ "$BGP_TYPE" == "frr-k8s" || "$BGP_TYPE" == "frr-k8s-cno" ]]; then
 	MODE_TO_SKIP="FRR-MODE"
 	BGP_MODE="frr-k8s"
 else
@@ -70,7 +70,7 @@ inv e2etest --kubeconfig=$(readlink -f ../../ocp/ostest/auth/kubeconfig) \
 
 oc wait --for=delete namespace/metallb-system-other --timeout=2m || true # making sure the namespace is deleted (should happen in aftersuite)
 
-FOCUS_EBGP="BGP.*A service of protocol load balancer should work with.*IPV4 - ExternalTrafficPolicyCluster$" # Just a smoke test to make sure ebgp works
+FOCUS_EBGP="BGP A service of protocol load balancer should work with ETP=cluster IPV4" # Just a smoke test to make sure ebgp works
 
 inv e2etest --kubeconfig=$(readlink -f ../../ocp/ostest/auth/kubeconfig) \
 	--service-pod-port=8080 --system-namespaces="metallb-system" --skip-docker \
