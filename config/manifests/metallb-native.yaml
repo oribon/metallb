@@ -385,6 +385,8 @@ spec:
     - jsonPath: .spec.ebgpMultiHop
       name: Multi Hops
       type: string
+    deprecated: true
+    deprecationWarning: v1beta1 is deprecated, please use v1beta2
     name: v1beta1
     schema:
       openAPIV3Schema:
@@ -1238,8 +1240,6 @@ spec:
                 x-kubernetes-validations:
                 - message: Value is immutable
                   rule: self == oldSelf
-                - message: Value is immutable
-                  rule: self == oldSelf
               serviceNamespace:
                 description: ServiceNamespace indicates the namespace of the service
                 type: string
@@ -1482,7 +1482,6 @@ rules:
   - metallb-webhook-configuration
   resources:
   - validatingwebhookconfigurations
-  - mutatingwebhookconfigurations
   verbs:
   - create
   - delete
@@ -1495,7 +1494,6 @@ rules:
   - admissionregistration.k8s.io
   resources:
   - validatingwebhookconfigurations
-  - mutatingwebhookconfigurations
   verbs:
   - list
   - watch
