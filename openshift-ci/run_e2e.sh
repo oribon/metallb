@@ -30,6 +30,12 @@ else
 	MODE_TO_SKIP="FRRK8S-MODE"
 	BGP_MODE="frr"
 fi
+
+FRRK8S_NAMESPACE=""
+if [[ "$BGP_TYPE" == "frr-k8s-cno" ]]; then
+  FRRK8S_NAMESPACE="--frr-k8s-namespace=openshift-frr-k8s"
+fi
+
 # need to skip L2 metrics / node selector test because the pod that's running the tests is not
 # same subnet of the cluster nodes, so the arp request that's done in the test won't work.
 # Also, skip l2 interface selector as it's not supported d/s currently.
@@ -66,7 +72,7 @@ inv e2etest --kubeconfig=$(readlink -f ../../ocp/ostest/auth/kubeconfig) \
 	--ipv4-service-range=192.168.10.0/24 --ipv6-service-range=fc00:f853:0ccd:e799::/124 \
 	--prometheus-namespace="openshift-monitoring" \
 	--local-nics="_" --node-nics="_" --skip="${SKIP}" --external-frr-image="quay.io/frrouting/frr:8.3.1" \
-	--bgp-mode="$BGP_MODE"
+	--bgp-mode="$BGP_MODE" $FRRK8S_NAMESPACE
 
 oc wait --for=delete namespace/metallb-system-other --timeout=2m || true # making sure the namespace is deleted (should happen in aftersuite)
 
@@ -77,4 +83,4 @@ inv e2etest --kubeconfig=$(readlink -f ../../ocp/ostest/auth/kubeconfig) \
 	--ipv4-service-range=192.168.10.0/24 --ipv6-service-range=fc00:f853:0ccd:e799::/124 \
 	--prometheus-namespace="openshift-monitoring" \
 	--local-nics="_" --node-nics="_" --focus="${FOCUS_EBGP}" --external-frr-image="quay.io/frrouting/frr:8.3.1" \
-	--host-bgp-mode="ebgp" --bgp-mode="$BGP_MODE"
+	--host-bgp-mode="ebgp" --bgp-mode="$BGP_MODE" $FRRK8S_NAMESPACE

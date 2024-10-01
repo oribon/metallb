@@ -191,7 +191,6 @@ EOF
 fi
 
 NAMESPACE="metallb-system"
-ATTEMPTS=0
 
 
 if [[  "$BGP_TYPE" == "frr-k8s-cno" || "$BGP_TYPE" == "frr-k8s" ]]; then
@@ -216,7 +215,20 @@ done
 
 fi
 
-while [[ -z $(oc get endpoints -n $NAMESPACE webhook-service -o jsonpath="{.subsets[0].addresses}" 2>/dev/null) ]]; do
+wait_for_pods $NAMESPACE "app=metallb"
+attempts=0
+until oc -n $NAMESPACE wait --for=condition=Ready --all pods --timeout 900s; do
+  attempts=$((attempts+1))
+  if [ $attempts -ge 5 ]; then
+    echo "failed to wait metallb pods"
+    exit 1
+  fi
+  sleep 2
+done
+
+
+ATTEMPTS=0
+while [[ -z $(oc get endpoints -n $NAMESPACE metallb-operator-webhook-server-service -o jsonpath="{.subsets[0].addresses}" 2>/dev/null) ]]; do
   echo "still waiting for webhookservice endpoints"
   sleep 10
   ATTEMPTS=$((ATTEMPTS+1))
