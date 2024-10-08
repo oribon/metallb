@@ -130,7 +130,7 @@ do
 done
 
 oc cp metallb-operator-deploy openshift-marketplace/buildindex:/tmp
-oc exec -n openshift-marketplace buildindex /tmp/metallb-operator-deploy/build_and_push_index.sh
+oc exec -n openshift-marketplace buildindex -- /tmp/metallb-operator-deploy/build_and_push_index.sh
 
 oc apply -f metallb-operator-deploy/install-resources.yaml
 
