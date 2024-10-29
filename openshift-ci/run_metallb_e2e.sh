@@ -50,7 +50,7 @@ export RUN_FRR_CONTAINER_ON_HOST_NETWORK=true
 
 mkdir -p /tmp/report
 inv e2etest --kubeconfig=$(readlink -f ../../ocp/ostest/auth/kubeconfig) \
-	--service-pod-port=8080 --system-namespaces="metallb-system" --skip-docker \
+	--service-pod-port=8080 --system-namespaces="metallb-system" \
 	--ipv4-service-range=192.168.10.0/24 --ipv6-service-range=fc00:f853:0ccd:e799::/124 \
 	--prometheus-namespace="openshift-monitoring" \
 	--local-nics="_" --node-nics="_" --skip="${SKIP}" --external-frr-image="quay.io/frrouting/frr:8.3.1" \
@@ -63,7 +63,7 @@ oc wait --for=delete namespace/metallb-system-other --timeout=2m || true # makin
 FOCUS_EBGP="BGP A service of protocol load balancer should work with ETP=cluster IPV4" # Just a smoke test to make sure ebgp works
 
 inv e2etest --kubeconfig=$(readlink -f ../../ocp/ostest/auth/kubeconfig) \
-	--service-pod-port=8080 --system-namespaces="metallb-system" --skip-docker \
+	--service-pod-port=8080 --system-namespaces="metallb-system" \
 	--ipv4-service-range=192.168.10.0/24 --ipv6-service-range=fc00:f853:0ccd:e799::/124 \
 	--prometheus-namespace="openshift-monitoring" \
 	--local-nics="_" --node-nics="_" --focus="${FOCUS_EBGP}" --external-frr-image="quay.io/frrouting/frr:8.3.1" \
