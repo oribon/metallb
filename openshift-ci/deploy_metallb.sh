@@ -1,16 +1,6 @@
 #!/usr/bin/bash
 set -euo pipefail
 
-wait_for_pods() {
-  local namespace=$1
-  local selector=$2
-
-  echo "waiting for pods $namespace - $selector to be created"
-  timeout 5m bash -c "until [[ -n \$(oc get pods -n $namespace -l $selector 2>/dev/null) ]]; do sleep 5; done"
-  echo "waiting for pods $namespace to be ready"
-  timeout 5m bash -c "until oc -n $namespace wait --for=condition=Ready --all pods --timeout 2m; do sleep 5; done"
-  echo "pods for $namespace are ready"
-}
 
 metallb_dir="$(dirname $(readlink -f $0))"
 git log -1 || true # just printing commit in the test output
