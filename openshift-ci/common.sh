@@ -10,3 +10,14 @@ source ./common.sh
 # shellcheck source=network.sh
 source ./network.sh
 popd
+
+wait_for_pods() {
+  local namespace=$1
+  local selector=$2
+
+  echo "waiting for pods $namespace - $selector to be created"
+  timeout 5m bash -c "until [[ -n \$(oc get pods -n $namespace -l $selector 2>/dev/null) ]]; do sleep 5; done"
+  echo "waiting for pods $namespace to be ready"
+  timeout 5m bash -c "until oc -n $namespace wait --for=condition=Ready --all pods --timeout 2m; do sleep 5; done"
+  echo "pods for $namespace are ready"
+}
