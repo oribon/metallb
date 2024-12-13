@@ -45,13 +45,6 @@ ESCAPED_KUBERBAC_IMAGE=$(printf '%s\n' "${KUBERBAC_IMAGE_BASE}:${KUBERBAC_IMAGE_
 find . -type f -name "*clusterserviceversion*.yaml" -exec sed -i 's/quay.io\/openshift\/origin-kube-rbac-proxy:.*$/'"$ESCAPED_KUBERBAC_IMAGE"'/g' {} +
 find . -type f -name "*clusterserviceversion*.yaml" -exec sed -r -i 's/name: metallb-operator\..*$/name: metallb-operator.v0.0.0/g' {} +
 
-if [[ "$BGP_TYPE" == "frr-k8s-cno" ]]; then
-  # - Change the metallb operator's CSV to instruct the operator to interact with CNO
-  awk '/DEPLOY_PODMONITORS/ {system("cat frrk8s-cno.patch"); print; next}1' manifests/stable/metallb-operator.clusterserviceversion.yaml  > temp.yaml
-  mv temp.yaml manifests/stable/metallb-operator.clusterserviceversion.yaml
-
-fi
-
 cd -
 
 oc label ns openshift-marketplace --overwrite pod-security.kubernetes.io/enforce=privileged
