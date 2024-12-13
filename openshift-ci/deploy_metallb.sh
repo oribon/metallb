@@ -164,7 +164,7 @@ fi
 
 NAMESPACE="metallb-system"
 FRRK8S_NAMESPACE="metallb-system"
-if [[ "$BGP_TYPE" == "frr-k8s-cno" ]]; then
+if [[ "$BGP_TYPE" == "frr-k8s-cno" || "$BGP_TYPE" == "frr-k8s" ]]; then
   FRRK8S_NAMESPACE="openshift-frr-k8s"
 fi
 
