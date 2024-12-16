@@ -39,7 +39,7 @@ set -e
 pip3 install --user -r ./../dev-env/requirements.txt
 
 FRRK8S_NAMESPACE=""
-if [[ "$BGP_TYPE" == "frr-k8s-cno" ]]; then
+if [[ "$BGP_TYPE" == "frr-k8s-cno" || "$BGP_TYPE" == "frr-k8s" ]]; then
   FRRK8S_NAMESPACE="--frr-k8s-namespace=openshift-frr-k8s"
 fi
 
