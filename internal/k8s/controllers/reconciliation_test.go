@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"path/filepath"
+	"reflect"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -33,6 +34,7 @@ import (
 
 	v1beta1 "go.universe.tf/metallb/api/v1beta1"
 	v1beta2 "go.universe.tf/metallb/api/v1beta2"
+	"go.universe.tf/metallb/internal/allocator"
 	frrk8s "go.universe.tf/metallb/internal/bgp/frrk8s"
 	"go.universe.tf/metallb/internal/config"
 	"go.universe.tf/metallb/internal/layer2"
@@ -69,6 +71,10 @@ var (
 		layer2ServiceAdvs = advs
 	}
 	speakerPod *corev1.Pod
+
+	poolStatusReconcileChan = make(chan event.GenericEvent)
+	poolCounters            = map[string]allocator.PoolCounters{}
+	poolCountersMutex       sync.Mutex
 )
 
 const (
@@ -213,6 +219,19 @@ var _ = BeforeSuite(func() {
 		},
 	}
 	err = layer2StatusReconciler.SetupWithManager(k8sManager)
+	Expect(err).ToNot(HaveOccurred())
+
+	poolStatusReconciler := &PoolStatusReconciler{
+		Client: k8sManager.GetClient(),
+		Logger: log.NewNopLogger(),
+		CountersFetcher: func(s string) allocator.PoolCounters {
+			poolCountersMutex.Lock()
+			defer poolCountersMutex.Unlock()
+			return poolCounters[s]
+		},
+		ReconcileChan: poolStatusReconcileChan,
+	}
+	err = poolStatusReconciler.SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
 	go func() {
@@ -566,6 +585,90 @@ var _ = Describe("Layer2 Status Controller", func() {
 				}
 				return len(statuses) == 0
 			}, 5*time.Second, 200*time.Millisecond).Should(BeTrue())
+		})
+	})
+})
+
+var _ = Describe("PoolStatus Controller", func() {
+	Context("SetupWithManager", func() {
+		testPoolName := "test"
+		It("Should Reconcile correctly", func() {
+			pool := v1beta1.IPAddressPool{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      testPoolName,
+					Namespace: testNamespace,
+				},
+				Spec: v1beta1.IPAddressPoolSpec{
+					Addresses: []string{
+						"1.2.3.4/30",
+						"1000::4/126",
+					},
+				},
+			}
+			validateStatus := func(expected v1beta1.IPAddressPoolStatus) {
+				Eventually(func() error {
+					newPool := v1beta1.IPAddressPool{}
+					err := k8sClient.Get(context.TODO(), client.ObjectKey{Name: pool.Name, Namespace: testNamespace}, &newPool)
+					if err != nil {
+						return err
+					}
+					if !reflect.DeepEqual(newPool.Status, expected) {
+						return fmt.Errorf("pool status does not match, got [%v] expected [%v]", newPool.Status, expected)
+					}
+					return nil
+				}, 5*time.Second, 200*time.Millisecond).ShouldNot(HaveOccurred())
+			}
+
+			poolCountersMutex.Lock()
+			poolCounters[testPoolName] = allocator.PoolCounters{
+				AvailableIPv4: 4,
+				AvailableIPv6: 4,
+				AssignedIPv4:  0,
+				AssignedIPv6:  0,
+			}
+			poolCountersMutex.Unlock()
+			err := k8sClient.Create(ctx, &pool)
+			Expect(err).ToNot(HaveOccurred())
+
+			expectedStatus := v1beta1.IPAddressPoolStatus{
+				AvailableIPv4: 4,
+				AvailableIPv6: 4,
+				AssignedIPv4:  0,
+				AssignedIPv6:  0,
+			}
+			validateStatus(expectedStatus)
+
+			// Generate a status event
+			poolCountersMutex.Lock()
+			poolCounters[testPoolName] = allocator.PoolCounters{
+				AvailableIPv4: 3,
+				AvailableIPv6: 3,
+				AssignedIPv4:  1,
+				AssignedIPv6:  1,
+			}
+			poolCountersMutex.Unlock()
+			poolStatusReconcileChan <- NewPoolStatusEvent(testNamespace, testPoolName)
+
+			expectedStatus = v1beta1.IPAddressPoolStatus{
+				AvailableIPv4: 3,
+				AvailableIPv6: 3,
+				AssignedIPv4:  1,
+				AssignedIPv6:  1,
+			}
+			validateStatus(expectedStatus)
+
+			// Manual updates should be reverted by the controller
+			err = k8sClient.Get(context.TODO(), client.ObjectKey{Name: pool.Name, Namespace: testNamespace}, &pool)
+			Expect(err).To(Not(HaveOccurred()))
+			pool.Status = v1beta1.IPAddressPoolStatus{
+				AvailableIPv4: 0,
+				AvailableIPv6: 0,
+				AssignedIPv4:  1,
+				AssignedIPv6:  1,
+			}
+			err = k8sClient.Status().Update(context.TODO(), &pool)
+			Expect(err).To(Not(HaveOccurred()))
+			validateStatus(expectedStatus)
 		})
 	})
 })

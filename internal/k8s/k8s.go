@@ -122,6 +122,8 @@ type Config struct {
 	Listener
 	Layer2StatusChan    <-chan event.GenericEvent
 	Layer2StatusFetcher controllers.StatusFetcher
+	PoolStatusChan      <-chan event.GenericEvent
+	PoolCountersFetcher controllers.PoolCountersFetcher
 }
 
 // New connects to masterAddr, using kubeconfig to authenticate.
@@ -208,6 +210,16 @@ func New(cfg *Config) (*Client, error) {
 		}).SetupWithManager(mgr); err != nil {
 			level.Error(c.logger).Log("error", err, "unable to create controller", "config")
 			return nil, errors.Join(err, errors.New("failed to create config reconciler"))
+		}
+
+		if err = (&controllers.PoolStatusReconciler{
+			Client:          mgr.GetClient(),
+			Logger:          cfg.Logger,
+			CountersFetcher: cfg.PoolCountersFetcher,
+			ReconcileChan:   cfg.PoolStatusChan,
+		}).SetupWithManager(mgr); err != nil {
+			level.Error(c.logger).Log("error", err, "unable to create controller", "config")
+			return nil, errors.Join(err, errors.New("failed to create pool status reconciler"))
 		}
 	}
 
