@@ -207,6 +207,7 @@ func (s *testK8S) Errorf(_ *v1.Service, evtType string, msg string, args ...inte
 	s.t.Logf("k8s Warning event %q: %s", evtType, fmt.Sprintf(msg, args...))
 	s.loggedWarning = true
 }
+func noopCallback(_ string) {}
 
 func TestBGPSpeakerEPSlices(t *testing.T) {
 	b := &fakeBGP{
@@ -214,9 +215,10 @@ func TestBGPSpeakerEPSlices(t *testing.T) {
 	}
 	newBGP = b.NewSessionManager
 	c, err := newController(controllerConfig{
-		MyNode:        "pandora",
-		DisableLayer2: true,
-		bgpType:       bgpNative,
+		MyNode:                "pandora",
+		DisableLayer2:         true,
+		bgpType:               bgpNative,
+		BGPAdsChangedCallback: noopCallback,
 	})
 	if err != nil {
 		t.Fatalf("creating controller: %s", err)
@@ -1174,9 +1176,10 @@ func TestNodeSelectors(t *testing.T) {
 	}
 	newBGP = b.NewSessionManager
 	c, err := newController(controllerConfig{
-		MyNode:        "pandora",
-		DisableLayer2: true,
-		bgpType:       bgpNative,
+		MyNode:                "pandora",
+		DisableLayer2:         true,
+		bgpType:               bgpNative,
+		BGPAdsChangedCallback: noopCallback,
 	})
 	if err != nil {
 		t.Fatalf("creating controller: %s", err)
@@ -1508,10 +1511,11 @@ func TestShouldAnnounceExcludeLB(t *testing.T) {
 			}},
 		}
 		c1, err := newController(controllerConfig{
-			MyNode:          "iris1",
-			Logger:          log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr)),
-			bgpType:         bgpNative,
-			IgnoreExcludeLB: test.ignoreExcludeFromLB,
+			MyNode:                "iris1",
+			Logger:                log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr)),
+			bgpType:               bgpNative,
+			IgnoreExcludeLB:       test.ignoreExcludeFromLB,
+			BGPAdsChangedCallback: noopCallback,
 		})
 		if err != nil {
 			t.Fatalf("creating controller: %s", err)
@@ -1519,10 +1523,11 @@ func TestShouldAnnounceExcludeLB(t *testing.T) {
 		c1.client = &testK8S{t: t}
 
 		c2, err := newController(controllerConfig{
-			MyNode:          "iris2",
-			Logger:          log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr)),
-			bgpType:         bgpNative,
-			IgnoreExcludeLB: test.ignoreExcludeFromLB,
+			MyNode:                "iris2",
+			Logger:                log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr)),
+			bgpType:               bgpNative,
+			IgnoreExcludeLB:       test.ignoreExcludeFromLB,
+			BGPAdsChangedCallback: noopCallback,
 		})
 		if err != nil {
 			t.Fatalf("creating controller: %s", err)

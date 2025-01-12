@@ -20,7 +20,10 @@ import (
 	"reflect"
 	"sort"
 	"strconv"
+	"sync"
 
+	"github.com/go-kit/log"
+	"github.com/go-kit/log/level"
 	"go.universe.tf/metallb/internal/bgp"
 	bgpfrr "go.universe.tf/metallb/internal/bgp/frr"
 	bgpfrrk8s "go.universe.tf/metallb/internal/bgp/frrk8s"
@@ -31,9 +34,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	discovery "k8s.io/api/discovery/v1"
 	"k8s.io/apimachinery/pkg/labels"
-
-	"github.com/go-kit/log"
-	"github.com/go-kit/log/level"
+	"k8s.io/apimachinery/pkg/util/sets"
 
 	"errors"
 )
@@ -61,15 +62,18 @@ type peer struct {
 }
 
 type bgpController struct {
-	logger          log.Logger
-	myNode          string
-	nodeLabels      labels.Set
-	peers           []*peer
-	svcAds          map[string][]*bgp.Advertisement
-	bgpType         bgpImplementation
-	secretHandling  SecretHandling
-	sessionManager  bgp.SessionManager
-	ignoreExcludeLB bool
+	logger             log.Logger
+	myNode             string
+	nodeLabels         labels.Set
+	peers              []*peer
+	svcAds             map[string][]*bgp.Advertisement
+	activeAds          map[string]sets.Set[string] // svc -> the peers it is advertised to
+	activeAdsMutex     sync.RWMutex
+	adsChangedCallback func(string)
+	bgpType            bgpImplementation
+	secretHandling     SecretHandling
+	sessionManager     bgp.SessionManager
+	ignoreExcludeLB    bool
 }
 
 func (c *bgpController) SetConfig(l log.Logger, cfg *config.Config) error {
@@ -348,8 +352,11 @@ func (c *bgpController) SetBalancer(l log.Logger, name string, lbIPs []net.IP, p
 }
 
 func (c *bgpController) updateAds() error {
+	c.activeAdsMutex.Lock()
+	defer c.activeAdsMutex.Unlock()
 	var allAds []*bgp.Advertisement
-	for _, ads := range c.svcAds {
+	pfxToSvc := map[string]sets.Set[string]{} // prefix -> the services that use it
+	for svcKey, ads := range c.svcAds {
 		// This list might contain duplicates, but that's fine,
 		// they'll get compacted by the session code when it's
 		// calculating advertisements.
@@ -357,7 +364,16 @@ func (c *bgpController) updateAds() error {
 		// TODO: be more intelligent about compacting advertisements
 		// and detecting conflicting advertisements.
 		allAds = append(allAds, ads...)
+		for _, ad := range ads {
+			if _, ok := pfxToSvc[ad.Prefix.String()]; !ok {
+				pfxToSvc[ad.Prefix.String()] = sets.New[string](svcKey)
+				continue
+			}
+			pfxToSvc[ad.Prefix.String()].Insert(svcKey)
+		}
 	}
+	oldActiveAds := c.activeAds
+	newActiveAds := map[string]sets.Set[string]{}
 	for _, peer := range c.peers {
 		if peer.session == nil {
 			continue
@@ -366,7 +382,40 @@ func (c *bgpController) updateAds() error {
 		if err := peer.session.Set(ads...); err != nil {
 			return err
 		}
+		for _, ad := range ads {
+			adSvcs := pfxToSvc[ad.Prefix.String()]
+			for svc := range adSvcs {
+				if _, ok := newActiveAds[svc]; !ok {
+					newActiveAds[svc] = sets.New[string](peer.cfg.Name)
+					continue
+				}
+				newActiveAds[svc].Insert(peer.cfg.Name)
+			}
+		}
 	}
+
+	changedSvcs := []string{} // the services that their advs changed
+	for svc, oldPeers := range oldActiveAds {
+		newPeers, ok := newActiveAds[svc]
+		if !ok {
+			changedSvcs = append(changedSvcs, svc)
+			continue
+		}
+		if !oldPeers.Equal(newPeers) {
+			changedSvcs = append(changedSvcs, svc)
+		}
+	}
+	for svc := range newActiveAds {
+		_, ok := oldActiveAds[svc]
+		if !ok {
+			changedSvcs = append(changedSvcs, svc)
+			continue
+		}
+	}
+	for _, k := range changedSvcs {
+		c.adsChangedCallback(k)
+	}
+	c.activeAds = newActiveAds
 	return nil
 }
 
@@ -430,4 +479,10 @@ func poolMatchesNodeBGP(pool *config.Pool, node string) bool {
 		}
 	}
 	return false
+}
+
+func (c *bgpController) PeersForService(key string) sets.Set[string] {
+	c.activeAdsMutex.RLock()
+	defer c.activeAdsMutex.RUnlock()
+	return c.activeAds[key]
 }
