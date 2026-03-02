@@ -19,8 +19,7 @@ package controllers
 import (
 	"fmt"
 
-	v1beta1 "go.universe.tf/metallb/api/v1beta1"
-	v1beta2 "go.universe.tf/metallb/api/v1beta2"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 	"go.universe.tf/metallb/internal/config"
 	"go.universe.tf/metallb/internal/k8s/epslices"
 	corev1 "k8s.io/api/core/v1"
@@ -32,12 +31,8 @@ import (
 
 func newFakeClient(initObjects []client.Object) (client.WithWatch, error) {
 	scheme := runtime.NewScheme()
-	if err := v1beta1.AddToScheme(scheme); err != nil {
-		return nil, fmt.Errorf("v1beta1: add to scheme failed: %v", err)
-	}
-
-	if err := v1beta2.AddToScheme(scheme); err != nil {
-		return nil, fmt.Errorf("v1beta2: add to scheme failed: %v", err)
+	if err := metallbv1.AddToScheme(scheme); err != nil {
+		return nil, fmt.Errorf("metallbv1: add to scheme failed: %v", err)
 	}
 
 	if err := corev1.AddToScheme(scheme); err != nil {
@@ -51,7 +46,7 @@ func newFakeClient(initObjects []client.Object) (client.WithWatch, error) {
 	return fake.NewClientBuilder().
 		WithScheme(scheme).
 		WithObjects(initObjects...).
-		WithStatusSubresource(&v1beta1.ConfigurationState{}).
+		WithStatusSubresource(&metallbv1.ConfigurationState{}).
 		WithIndex(&discovery.EndpointSlice{}, epslices.SlicesServiceIndexName, func(o client.Object) []string {
 			res, err := epslices.SlicesServiceIndex(o)
 			if err != nil {

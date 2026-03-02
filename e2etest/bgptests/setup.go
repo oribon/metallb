@@ -11,7 +11,7 @@ import (
 	jigservice "go.universe.tf/e2etest/pkg/jigservice"
 	"go.universe.tf/e2etest/pkg/metallb"
 	testservice "go.universe.tf/e2etest/pkg/service"
-	metallbv1beta1 "go.universe.tf/metallb/api/v1beta1"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientset "k8s.io/client-go/kubernetes"
@@ -19,12 +19,12 @@ import (
 
 func setupBGPService(cs clientset.Interface, namespace string, pairingIPFamily ipfamily.Family, poolAddresses []string, peers []*frrcontainer.FRR, tweak testservice.Tweak) (*jigservice.TestJig, *corev1.Service) {
 	resources := config.Resources{
-		Pools: []metallbv1beta1.IPAddressPool{
+		Pools: []metallbv1.IPAddressPool{
 			{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "bgp-test",
 				},
-				Spec: metallbv1beta1.IPAddressPoolSpec{
+				Spec: metallbv1.IPAddressPoolSpec{
 					Addresses: poolAddresses,
 				},
 			},
@@ -44,7 +44,7 @@ func setupBGPService(cs clientset.Interface, namespace string, pairingIPFamily i
 		Expect(err).NotTo(HaveOccurred())
 	}
 
-	resources.BGPAdvs = []metallbv1beta1.BGPAdvertisement{
+	resources.BGPAdvs = []metallbv1.BGPAdvertisement{
 		{ObjectMeta: metav1.ObjectMeta{Name: "empty"}},
 	}
 	resources.Peers = metallb.PeersForContainers(peers, pairingIPFamily)

@@ -12,7 +12,7 @@ import (
 	"sync"
 	"testing"
 
-	metallbv1beta1 "go.universe.tf/metallb/api/v1beta1"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 	"go.universe.tf/metallb/internal/bgp"
 	"go.universe.tf/metallb/internal/bgp/community"
 	"go.universe.tf/metallb/internal/config"
@@ -2034,10 +2034,10 @@ func TestCheckBGPAdvConflicts(t *testing.T) {
 	// we explicitly use config.For to make sure the pool's private fields are set,
 	// which is necessary because the conflict check function relies on them.
 	cfg, err := config.For(config.ClusterResources{
-		Pools: []metallbv1beta1.IPAddressPool{
+		Pools: []metallbv1.IPAddressPool{
 			{
 				ObjectMeta: metav1.ObjectMeta{Name: "test-pool"},
-				Spec:       metallbv1beta1.IPAddressPoolSpec{Addresses: []string{"10.20.30.0/24"}},
+				Spec:       metallbv1.IPAddressPoolSpec{Addresses: []string{"10.20.30.0/24"}},
 			},
 		},
 	}, config.DontValidate)

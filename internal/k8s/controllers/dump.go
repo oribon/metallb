@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 
 	"github.com/davecgh/go-spew/spew"
-	metallbv1beta2 "go.universe.tf/metallb/api/v1beta2"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 	"go.universe.tf/metallb/internal/config"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -49,8 +49,8 @@ func dumpResource(i interface{}) string {
 	return string(toDump)
 }
 
-func sanitizeBGPPeer(peers ...metallbv1beta2.BGPPeer) []metallbv1beta2.BGPPeer {
-	res := make([]metallbv1beta2.BGPPeer, 0)
+func sanitizeBGPPeer(peers ...metallbv1.BGPPeer) []metallbv1.BGPPeer {
+	res := make([]metallbv1.BGPPeer, 0)
 	for _, p := range peers {
 		toAdd := p.DeepCopy()
 		toAdd.Spec.Password = "<retracted>"

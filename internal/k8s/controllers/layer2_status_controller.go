@@ -24,7 +24,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	"go.universe.tf/metallb/api/v1beta1"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 	"go.universe.tf/metallb/internal/layer2"
 )
 
@@ -71,7 +71,7 @@ func (r *Layer2StatusReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	serviceName, serviceNamespace := req.Name, req.Namespace
 
 	ipAdvS := r.StatusFetcher(types.NamespacedName{Name: serviceName, Namespace: serviceNamespace})
-	var serviceL2statuses v1beta1.ServiceL2StatusList
+	var serviceL2statuses metallbv1.ServiceL2StatusList
 	if err := r.List(ctx, &serviceL2statuses, client.MatchingFields{
 		serviceIndexName: types.NamespacedName{Name: serviceName, Namespace: serviceNamespace}.String(),
 	}); err != nil {
@@ -95,7 +95,7 @@ func (r *Layer2StatusReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	}
 
 	// We are the (sole) leader for this service.
-	var state *v1beta1.ServiceL2Status
+	var state *metallbv1.ServiceL2Status
 	for _, item := range serviceL2statuses.Items {
 		if item.Labels[LabelAnnounceNode] == r.NodeName && state == nil {
 			state = &item
@@ -111,7 +111,7 @@ func (r *Layer2StatusReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	}
 
 	if state == nil {
-		state = &v1beta1.ServiceL2Status{
+		state = &metallbv1.ServiceL2Status{
 			ObjectMeta: metav1.ObjectMeta{
 				GenerateName: "l2-",
 				Namespace:    r.Namespace,
@@ -156,7 +156,7 @@ func (r *Layer2StatusReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 func (r *Layer2StatusReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	p := predicate.NewPredicateFuncs(func(object client.Object) bool {
-		if s, ok := object.(*v1beta1.ServiceL2Status); ok {
+		if s, ok := object.(*metallbv1.ServiceL2Status); ok {
 			// only objects with complete labels that can illustrate which service it is related to
 			// can trigger the reconciler
 			label := s.GetLabels()
@@ -184,9 +184,9 @@ func (r *Layer2StatusReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		}
 		return true
 	})
-	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &v1beta1.ServiceL2Status{}, serviceIndexName,
+		if err := mgr.GetFieldIndexer().IndexField(context.Background(), &metallbv1.ServiceL2Status{}, serviceIndexName,
 		func(rawObj client.Object) []string {
-			s, ok := rawObj.(*v1beta1.ServiceL2Status)
+			s, ok := rawObj.(*metallbv1.ServiceL2Status)
 			if s == nil {
 				level.Error(r.Logger).Log("controller", "fieldindexer", "error", "received nil ServiceL2Status")
 				return nil
@@ -209,7 +209,7 @@ func (r *Layer2StatusReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("servicel2status").
 		// for crs, we build meta from cr label which indicate the service information
-		Watches(&v1beta1.ServiceL2Status{}, handler.EnqueueRequestsFromMapFunc(
+		Watches(&metallbv1.ServiceL2Status{}, handler.EnqueueRequestsFromMapFunc(
 			func(ctx context.Context, object client.Object) []reconcile.Request {
 				level.Debug(r.Logger).Log("controller", "Layer2StatusReconciler", "enqueueing", "object", object)
 				label := object.GetLabels()
@@ -228,9 +228,9 @@ func (r *Layer2StatusReconciler) buildDesiredStatus(
 	advertisements []layer2.IPAdvertisement,
 	serviceName,
 	serviceNamespace string,
-) v1beta1.MetalLBServiceL2Status {
+) metallbv1.MetalLBServiceL2Status {
 	// todo: add advertise ip or not?
-	s := v1beta1.MetalLBServiceL2Status{
+	s := metallbv1.MetalLBServiceL2Status{
 		Node:             r.NodeName,
 		ServiceName:      serviceName,
 		ServiceNamespace: serviceNamespace,
@@ -239,7 +239,7 @@ func (r *Layer2StatusReconciler) buildDesiredStatus(
 	adv := advertisements[0]
 	if !adv.IsAllInterfaces() {
 		for inf := range adv.GetInterfaces() {
-			s.Interfaces = append(s.Interfaces, v1beta1.InterfaceInfo{Name: inf})
+			s.Interfaces = append(s.Interfaces, metallbv1.InterfaceInfo{Name: inf})
 		}
 	}
 	return s

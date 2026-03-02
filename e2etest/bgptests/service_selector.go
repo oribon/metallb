@@ -14,7 +14,7 @@ import (
 	"go.universe.tf/e2etest/pkg/k8sclient"
 	"go.universe.tf/e2etest/pkg/metallb"
 	testservice "go.universe.tf/e2etest/pkg/service"
-	metallbv1beta1 "go.universe.tf/metallb/api/v1beta1"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/onsi/ginkgo/v2"
@@ -63,13 +63,13 @@ var _ = ginkgo.Describe("BGP Service Selector", func() {
 		func(pairingIPFamily ipfamily.Family, poolAddressA, poolAddressB string) {
 			ginkgo.By("Setting up two pools with labels and advertisement with both selectors")
 			resources := config.Resources{
-				Pools: []metallbv1beta1.IPAddressPool{
+				Pools: []metallbv1.IPAddressPool{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:   "pool-a",
 							Labels: map[string]string{"pool": "a"},
 						},
-						Spec: metallbv1beta1.IPAddressPoolSpec{
+						Spec: metallbv1.IPAddressPoolSpec{
 							Addresses: []string{poolAddressA},
 						},
 					},
@@ -78,18 +78,18 @@ var _ = ginkgo.Describe("BGP Service Selector", func() {
 							Name:   "pool-b",
 							Labels: map[string]string{"pool": "b"},
 						},
-						Spec: metallbv1beta1.IPAddressPoolSpec{
+						Spec: metallbv1.IPAddressPoolSpec{
 							Addresses: []string{poolAddressB},
 						},
 					},
 				},
 				Peers: metallb.PeersForContainers(FRRContainers, pairingIPFamily),
-				BGPAdvs: []metallbv1beta1.BGPAdvertisement{
+				BGPAdvs: []metallbv1.BGPAdvertisement{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "adv-pool-a-expose-true",
 						},
-						Spec: metallbv1beta1.BGPAdvertisementSpec{
+						Spec: metallbv1.BGPAdvertisementSpec{
 							IPAddressPoolSelectors: []metav1.LabelSelector{
 								{
 									MatchLabels: map[string]string{"pool": "a"},
@@ -188,23 +188,23 @@ var _ = ginkgo.Describe("BGP Service Selector", func() {
 	ginkgo.DescribeTable("Multiple service selectors",
 		func(pairingIPFamily ipfamily.Family, poolAddress string) {
 			resources := config.Resources{
-				Pools: []metallbv1beta1.IPAddressPool{
+				Pools: []metallbv1.IPAddressPool{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "bgp-test-pool",
 						},
-						Spec: metallbv1beta1.IPAddressPoolSpec{
+						Spec: metallbv1.IPAddressPoolSpec{
 							Addresses: []string{poolAddress},
 						},
 					},
 				},
 				Peers: metallb.PeersForContainers(FRRContainers, pairingIPFamily),
-				BGPAdvs: []metallbv1beta1.BGPAdvertisement{
+				BGPAdvs: []metallbv1.BGPAdvertisement{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "with-multiple-selectors",
 						},
-						Spec: metallbv1beta1.BGPAdvertisementSpec{
+						Spec: metallbv1.BGPAdvertisementSpec{
 							ServiceSelectors: []metav1.LabelSelector{
 								{
 									MatchLabels: map[string]string{"tier": "frontend"},

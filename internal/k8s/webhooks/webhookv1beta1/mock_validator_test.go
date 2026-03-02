@@ -5,16 +5,16 @@ package webhookv1beta1
 import (
 	"errors"
 
-	"go.universe.tf/metallb/api/v1beta1"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type mockValidator struct {
-	ipAddressPools *v1beta1.IPAddressPoolList
-	bgpAdvs        *v1beta1.BGPAdvertisementList
-	l2Advs         *v1beta1.L2AdvertisementList
-	communities    *v1beta1.CommunityList
+	ipAddressPools *metallbv1.IPAddressPoolList
+	bgpAdvs        *metallbv1.BGPAdvertisementList
+	l2Advs         *metallbv1.L2AdvertisementList
+	communities    *metallbv1.CommunityList
 	nodes          *v1.NodeList
 	forceError     bool
 }
@@ -22,13 +22,13 @@ type mockValidator struct {
 func (m *mockValidator) Validate(objects ...client.ObjectList) error {
 	for _, obj := range objects { // assuming one object per type
 		switch list := obj.(type) {
-		case *v1beta1.BGPAdvertisementList:
+		case *metallbv1.BGPAdvertisementList:
 			m.bgpAdvs = list
-		case *v1beta1.L2AdvertisementList:
+		case *metallbv1.L2AdvertisementList:
 			m.l2Advs = list
-		case *v1beta1.IPAddressPoolList:
+		case *metallbv1.IPAddressPoolList:
 			m.ipAddressPools = list
-		case *v1beta1.CommunityList:
+		case *metallbv1.CommunityList:
 			m.communities = list
 		case *v1.NodeList:
 			m.nodes = list

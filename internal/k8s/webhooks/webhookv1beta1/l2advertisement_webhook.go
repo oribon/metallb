@@ -24,7 +24,7 @@ import (
 	"errors"
 
 	"github.com/go-kit/log/level"
-	"go.universe.tf/metallb/api/v1beta1"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 	v1 "k8s.io/api/admission/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -55,8 +55,8 @@ type L2AdvertisementValidator struct {
 
 // Handle handled incoming admission requests for L2Advertisement objects.
 func (v *L2AdvertisementValidator) Handle(ctx context.Context, req admission.Request) admission.Response {
-	var advertisement v1beta1.L2Advertisement
-	var oldAdvertisement v1beta1.L2Advertisement
+	var advertisement metallbv1.L2Advertisement
+	var oldAdvertisement metallbv1.L2Advertisement
 	if req.Operation == v1.Delete {
 		if err := v.decoder.DecodeRaw(req.OldObject, &advertisement); err != nil {
 			return admission.Errored(http.StatusBadRequest, err)
@@ -93,8 +93,8 @@ func (v *L2AdvertisementValidator) Handle(ctx context.Context, req admission.Req
 }
 
 // validateL2AdvCreate implements webhook.Validator so a webhook will be registered for v1beta1.L2Advertisement.
-func validateL2AdvCreate(l2Adv *v1beta1.L2Advertisement) error {
-	level.Debug(Logger).Log("webhook", "v1beta1.L2Advertisement", "action", "create", "name", l2Adv.Name, "namespace", l2Adv.Namespace)
+func validateL2AdvCreate(l2Adv *metallbv1.L2Advertisement) error {
+	level.Debug(Logger).Log("webhook", "l2advertisement", "action", "create", "name", l2Adv.Name, "namespace", l2Adv.Namespace)
 
 	if l2Adv.Namespace != MetalLBNamespace {
 		return fmt.Errorf("resource must be created in %s namespace", MetalLBNamespace)
@@ -113,15 +113,15 @@ func validateL2AdvCreate(l2Adv *v1beta1.L2Advertisement) error {
 	toValidate := l2AdvListWithUpdate(existingL2AdvList, l2Adv)
 	err = Validator.Validate(toValidate, ipAddressPools)
 	if err != nil {
-		level.Error(Logger).Log("webhook", "v1beta1.L2Advertisement", "action", "create", "name", l2Adv.Name, "namespace", l2Adv.Namespace, "error", err)
+		level.Error(Logger).Log("webhook", "l2advertisement", "action", "create", "name", l2Adv.Name, "namespace", l2Adv.Namespace, "error", err)
 		return err
 	}
 	return nil
 }
 
 // validateL2AdvUpdate implements webhook.Validator so a webhook will be registered for v1beta1.L2Advertisement.
-func validateL2AdvUpdate(l2Adv *v1beta1.L2Advertisement, _ *v1beta1.L2Advertisement) error {
-	level.Debug(Logger).Log("webhook", "v1beta1.L2Advertisement", "action", "update", "name", l2Adv.Name, "namespace", l2Adv.Namespace)
+func validateL2AdvUpdate(l2Adv *metallbv1.L2Advertisement, _ *metallbv1.L2Advertisement) error {
+	level.Debug(Logger).Log("webhook", "l2advertisement", "action", "update", "name", l2Adv.Name, "namespace", l2Adv.Namespace)
 
 	l2Advs, err := getExistingL2Advs()
 	if err != nil {
@@ -136,27 +136,27 @@ func validateL2AdvUpdate(l2Adv *v1beta1.L2Advertisement, _ *v1beta1.L2Advertisem
 	toValidate := l2AdvListWithUpdate(l2Advs, l2Adv)
 	err = Validator.Validate(toValidate, ipAddressPools)
 	if err != nil {
-		level.Error(Logger).Log("webhook", "v1beta1.L2Advertisement", "action", "create", "name", l2Adv.Name, "namespace", l2Adv.Namespace, "error", err)
+		level.Error(Logger).Log("webhook", "l2advertisement", "action", "create", "name", l2Adv.Name, "namespace", l2Adv.Namespace, "error", err)
 		return err
 	}
 	return nil
 }
 
 // validateL2AdvDelete implements webhook.Validator so a webhook will be registered for v1beta1.L2Advertisement.
-func validateL2AdvDelete(l2Adv *v1beta1.L2Advertisement) error {
+func validateL2AdvDelete(l2Adv *metallbv1.L2Advertisement) error {
 	return nil
 }
 
-var getExistingL2Advs = func() (*v1beta1.L2AdvertisementList, error) {
-	existingL2AdvList := &v1beta1.L2AdvertisementList{}
+var getExistingL2Advs = func() (*metallbv1.L2AdvertisementList, error) {
+	existingL2AdvList := &metallbv1.L2AdvertisementList{}
 	err := WebhookClient.List(context.Background(), existingL2AdvList, &client.ListOptions{Namespace: MetalLBNamespace})
 	if err != nil {
-		return nil, errors.Join(err, errors.New("failed to get existing v1beta1.L2Advertisement objects"))
+		return nil, errors.Join(err, errors.New("failed to get existing L2Advertisement objects"))
 	}
 	return existingL2AdvList, nil
 }
 
-func l2AdvListWithUpdate(existing *v1beta1.L2AdvertisementList, toAdd *v1beta1.L2Advertisement) *v1beta1.L2AdvertisementList {
+func l2AdvListWithUpdate(existing *metallbv1.L2AdvertisementList, toAdd *metallbv1.L2Advertisement) *metallbv1.L2AdvertisementList {
 	res := existing.DeepCopy()
 	for i, item := range res.Items { // We override the element with the fresh copy
 		if item.Name == toAdd.Name {

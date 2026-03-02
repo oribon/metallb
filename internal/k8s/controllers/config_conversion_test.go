@@ -9,21 +9,20 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
-	v1beta1 "go.universe.tf/metallb/api/v1beta1"
-	v1beta2 "go.universe.tf/metallb/api/v1beta2"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 	"go.universe.tf/metallb/internal/config"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestConversionIsStable(t *testing.T) {
-	peers := []v1beta2.BGPPeer{
+	peers := []metallbv1.BGPPeer{
 		{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "peer1",
 				Namespace: "metallb-system",
 			},
-			Spec: v1beta2.BGPPeerSpec{
+			Spec: metallbv1.BGPPeerSpec{
 				MyASN:      42,
 				ASN:        142,
 				Address:    "1.2.3.4",
@@ -35,7 +34,7 @@ func TestConversionIsStable(t *testing.T) {
 				Name:      "peer2",
 				Namespace: "metallb-system",
 			},
-			Spec: v1beta2.BGPPeerSpec{
+			Spec: metallbv1.BGPPeerSpec{
 				MyASN:      42,
 				ASN:        142,
 				Address:    "1.2.3.5",
@@ -43,7 +42,7 @@ func TestConversionIsStable(t *testing.T) {
 			},
 		},
 	}
-	bfdProfiles := []v1beta1.BFDProfile{
+	bfdProfiles := []metallbv1.BFDProfile{
 		{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "default",
@@ -57,13 +56,13 @@ func TestConversionIsStable(t *testing.T) {
 			},
 		},
 	}
-	pools := []v1beta1.IPAddressPool{
+	pools := []metallbv1.IPAddressPool{
 		{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "pool1",
 				Namespace: "metallb-system",
 			},
-			Spec: v1beta1.IPAddressPoolSpec{
+			Spec: metallbv1.IPAddressPoolSpec{
 				Addresses: []string{
 					"10.20.0.0/16",
 				},
@@ -74,23 +73,23 @@ func TestConversionIsStable(t *testing.T) {
 				Name:      "pool2",
 				Namespace: "metallb-system",
 			},
-			Spec: v1beta1.IPAddressPoolSpec{
+			Spec: metallbv1.IPAddressPoolSpec{
 				Addresses: []string{
 					"10.10.0.0/16",
 				},
-				AllocateTo: &v1beta1.ServiceAllocation{
+				AllocateTo: &metallbv1.ServiceAllocation{
 					Namespaces: []string{"foo", "bar"},
 				},
 			},
 		},
 	}
-	bgpAdvs := []v1beta1.BGPAdvertisement{
+	bgpAdvs := []metallbv1.BGPAdvertisement{
 		{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "adv1",
 				Namespace: "metallb-system",
 			},
-			Spec: v1beta1.BGPAdvertisementSpec{
+			Spec: metallbv1.BGPAdvertisementSpec{
 				Communities: []string{"bar"},
 			},
 		},
@@ -99,12 +98,12 @@ func TestConversionIsStable(t *testing.T) {
 				Name:      "adv2",
 				Namespace: "metallb-system",
 			},
-			Spec: v1beta1.BGPAdvertisementSpec{
+			Spec: metallbv1.BGPAdvertisementSpec{
 				Communities: []string{"bar2"},
 			},
 		},
 	}
-	l2Advs := []v1beta1.L2Advertisement{
+	l2Advs := []metallbv1.L2Advertisement{
 		{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "l2adv1",
@@ -116,20 +115,20 @@ func TestConversionIsStable(t *testing.T) {
 				Name:      "l2adv2",
 				Namespace: "metallb-system",
 			},
-			Spec: v1beta1.L2AdvertisementSpec{
+			Spec: metallbv1.L2AdvertisementSpec{
 				Interfaces: []string{"foo"},
 			},
 		},
 	}
 
-	communities := []v1beta1.Community{
+	communities := []metallbv1.Community{
 		{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "community",
 				Namespace: "metallb-system",
 			},
-			Spec: v1beta1.CommunitySpec{
-				Communities: []v1beta1.CommunityAlias{
+			Spec: metallbv1.CommunitySpec{
+				Communities: []metallbv1.CommunityAlias{
 					{
 						Name:  "bar",
 						Value: "64512:1234",
@@ -142,8 +141,8 @@ func TestConversionIsStable(t *testing.T) {
 				Name:      "community1",
 				Namespace: "metallb-system",
 			},
-			Spec: v1beta1.CommunitySpec{
-				Communities: []v1beta1.CommunityAlias{
+			Spec: metallbv1.CommunitySpec{
+				Communities: []metallbv1.CommunityAlias{
 					{
 						Name:  "bar2",
 						Value: "64512:1235",

@@ -11,7 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 	jigservice "go.universe.tf/e2etest/pkg/jigservice"
 	"go.universe.tf/e2etest/pkg/k8sclient"
-	metallbv1beta1 "go.universe.tf/metallb/api/v1beta1"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientset "k8s.io/client-go/kubernetes"
@@ -68,12 +68,12 @@ var _ = ginkgo.Describe("L2-interface selector", func() {
 	ginkgo.Context("Interface Selector", func() {
 		ginkgo.BeforeEach(func() {
 			resources := config.Resources{
-				Pools: []metallbv1beta1.IPAddressPool{
+				Pools: []metallbv1.IPAddressPool{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "l2-test",
 						},
-						Spec: metallbv1beta1.IPAddressPoolSpec{
+						Spec: metallbv1.IPAddressPoolSpec{
 							Addresses: []string{
 								IPV4ServiceRange,
 								IPV6ServiceRange,
@@ -90,12 +90,12 @@ var _ = ginkgo.Describe("L2-interface selector", func() {
 		ginkgo.It("Validate L2ServiceStatus interface", func() {
 			ginkgo.By("use the 1st interface for announcing")
 			resources := config.Resources{
-				L2Advs: []metallbv1beta1.L2Advertisement{
+				L2Advs: []metallbv1.L2Advertisement{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "with-interfaces",
 						},
-						Spec: metallbv1beta1.L2AdvertisementSpec{
+						Spec: metallbv1.L2AdvertisementSpec{
 							Interfaces: []string{NodeNics[0]},
 						},
 					},
@@ -116,7 +116,7 @@ var _ = ginkgo.Describe("L2-interface selector", func() {
 			}, 2*time.Minute, 1*time.Second).ShouldNot(HaveOccurred())
 
 			Consistently(func() string {
-				var s *metallbv1beta1.ServiceL2Status
+				var s *metallbv1.ServiceL2Status
 				if s, err = status.L2ForService(ConfigUpdater.Client(), svc); err != nil {
 					return err.Error()
 				}
@@ -129,12 +129,12 @@ var _ = ginkgo.Describe("L2-interface selector", func() {
 
 		ginkgo.It("Validate the LB IP's mac", func() {
 			resources := config.Resources{
-				L2Advs: []metallbv1beta1.L2Advertisement{
+				L2Advs: []metallbv1.L2Advertisement{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "with-interfaces",
 						},
-						Spec: metallbv1beta1.L2AdvertisementSpec{
+						Spec: metallbv1.L2AdvertisementSpec{
 							Interfaces: []string{NodeNics[0]},
 						},
 					},
@@ -195,12 +195,12 @@ var _ = ginkgo.Describe("L2-interface selector", func() {
 
 			for i := range NodeNics {
 				resources := config.Resources{
-					L2Advs: []metallbv1beta1.L2Advertisement{
+					L2Advs: []metallbv1.L2Advertisement{
 						{
 							ObjectMeta: metav1.ObjectMeta{
 								Name: "with-interfaces",
 							},
-							Spec: metallbv1beta1.L2AdvertisementSpec{
+							Spec: metallbv1.L2AdvertisementSpec{
 								Interfaces: []string{NodeNics[i]},
 							},
 						},
@@ -224,12 +224,12 @@ var _ = ginkgo.Describe("L2-interface selector", func() {
 
 		ginkgo.It("Specify not existing interfaces", func() {
 			resources := config.Resources{
-				L2Advs: []metallbv1beta1.L2Advertisement{
+				L2Advs: []metallbv1.L2Advertisement{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "with-interfaces",
 						},
-						Spec: metallbv1beta1.L2AdvertisementSpec{
+						Spec: metallbv1.L2AdvertisementSpec{
 							Interfaces: []string{"foo"},
 						},
 					},
@@ -282,11 +282,11 @@ var _ = ginkgo.Describe("L2-interface selector", func() {
 			resources := config.Resources{}
 
 			for i := range NodeNics {
-				l2Adv := metallbv1beta1.L2Advertisement{
+				l2Adv := metallbv1.L2Advertisement{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: fmt.Sprintf("with-interfaces-%d-l2adv", i),
 					},
-					Spec: metallbv1beta1.L2AdvertisementSpec{
+					Spec: metallbv1.L2AdvertisementSpec{
 						IPAddressPools: []string{"l2-test"},
 						Interfaces:     []string{NodeNics[i]},
 					},
@@ -318,12 +318,12 @@ var _ = ginkgo.Describe("L2-interface selector", func() {
 			Expect(err).NotTo(HaveOccurred())
 			for _, node := range allNodes.Items {
 				resources := config.Resources{
-					L2Advs: []metallbv1beta1.L2Advertisement{
+					L2Advs: []metallbv1.L2Advertisement{
 						{
 							ObjectMeta: metav1.ObjectMeta{
 								Name: "with-interfaces",
 							},
-							Spec: metallbv1beta1.L2AdvertisementSpec{
+							Spec: metallbv1.L2AdvertisementSpec{
 								Interfaces:    []string{NodeNics[0]},
 								NodeSelectors: k8s.SelectorsForNodes([]corev1.Node{node}),
 							},

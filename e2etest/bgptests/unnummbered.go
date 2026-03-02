@@ -21,8 +21,7 @@ import (
 	"go.universe.tf/e2etest/pkg/k8s"
 	"go.universe.tf/e2etest/pkg/k8sclient"
 	"go.universe.tf/e2etest/pkg/metallb"
-	metallbv1beta1 "go.universe.tf/metallb/api/v1beta1"
-	metallbv1beta2 "go.universe.tf/metallb/api/v1beta2"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/onsi/ginkgo/v2"
@@ -94,13 +93,13 @@ var _ = ginkgo.Describe("FRR Unnumbered BGP", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		resources := config.Resources{
-			Peers: []metallbv1beta2.BGPPeer{
+			Peers: []metallbv1.BGPPeer{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "tor",
 						Namespace: metallb.Namespace,
 					},
-					Spec: metallbv1beta2.BGPPeerSpec{
+					Spec: metallbv1.BGPPeerSpec{
 						Interface:  p2pInterface,
 						ASN:        rc.ASNRemote,
 						MyASN:      rc.ASNLocal,
@@ -108,23 +107,22 @@ var _ = ginkgo.Describe("FRR Unnumbered BGP", func() {
 					},
 				},
 			},
-			BFDProfiles: []metallbv1beta1.BFDProfile{{
+			BFDProfiles: []metallbv1.BFDProfile{{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "simple",
 				},
-			},
-			},
-			Pools: []metallbv1beta1.IPAddressPool{
+			}},
+			Pools: []metallbv1.IPAddressPool{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "bgp-test",
 					},
-					Spec: metallbv1beta1.IPAddressPoolSpec{
+					Spec: metallbv1.IPAddressPoolSpec{
 						Addresses: prefixSendFromLocal,
 					},
 				},
 			},
-			BGPAdvs: []metallbv1beta1.BGPAdvertisement{
+			BGPAdvs: []metallbv1.BGPAdvertisement{
 				{ObjectMeta: metav1.ObjectMeta{Name: "empty"}},
 			},
 		}

@@ -5,8 +5,7 @@ package config
 import (
 	"strings"
 
-	metallbv1beta1 "go.universe.tf/metallb/api/v1beta1"
-	metallbv1beta2 "go.universe.tf/metallb/api/v1beta2"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 	apivalidate "go.universe.tf/metallb/internal/k8s/webhooks/validate"
 
 	v1 "k8s.io/api/core/v1"
@@ -30,26 +29,26 @@ type validator struct {
 
 func (v *validator) Validate(resources ...client.ObjectList) error {
 	clusterResources := ClusterResources{
-		Pools:       make([]metallbv1beta1.IPAddressPool, 0),
-		Peers:       make([]metallbv1beta2.BGPPeer, 0),
-		BFDProfiles: make([]metallbv1beta1.BFDProfile, 0),
-		BGPAdvs:     make([]metallbv1beta1.BGPAdvertisement, 0),
-		L2Advs:      make([]metallbv1beta1.L2Advertisement, 0),
-		Communities: make([]metallbv1beta1.Community, 0),
+		Pools:       make([]metallbv1.IPAddressPool, 0),
+		Peers:       make([]metallbv1.BGPPeer, 0),
+		BFDProfiles: make([]metallbv1.BFDProfile, 0),
+		BGPAdvs:     make([]metallbv1.BGPAdvertisement, 0),
+		L2Advs:      make([]metallbv1.L2Advertisement, 0),
+		Communities: make([]metallbv1.Community, 0),
 	}
 	for _, list := range resources {
 		switch list := list.(type) {
-		case *metallbv1beta1.IPAddressPoolList:
+		case *metallbv1.IPAddressPoolList:
 			clusterResources.Pools = append(clusterResources.Pools, list.Items...)
-		case *metallbv1beta2.BGPPeerList:
+		case *metallbv1.BGPPeerList:
 			clusterResources.Peers = append(clusterResources.Peers, list.Items...)
-		case *metallbv1beta1.BFDProfileList:
+		case *metallbv1.BFDProfileList:
 			clusterResources.BFDProfiles = append(clusterResources.BFDProfiles, list.Items...)
-		case *metallbv1beta1.BGPAdvertisementList:
+		case *metallbv1.BGPAdvertisementList:
 			clusterResources.BGPAdvs = append(clusterResources.BGPAdvs, list.Items...)
-		case *metallbv1beta1.L2AdvertisementList:
+		case *metallbv1.L2AdvertisementList:
 			clusterResources.L2Advs = append(clusterResources.L2Advs, list.Items...)
-		case *metallbv1beta1.CommunityList:
+		case *metallbv1.CommunityList:
 			clusterResources.Communities = append(clusterResources.Communities, list.Items...)
 		case *v1.NodeList:
 			clusterResources.Nodes = append(clusterResources.Nodes, list.Items...)

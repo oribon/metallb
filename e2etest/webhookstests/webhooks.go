@@ -30,8 +30,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/k8sreporter"
 
-	metallbv1beta1 "go.universe.tf/metallb/api/v1beta1"
-	metallbv1beta2 "go.universe.tf/metallb/api/v1beta2"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -64,12 +63,12 @@ var _ = ginkgo.Describe("Webhooks", func() {
 		ginkgo.It("Should recognize overlapping addresses in two AddressPools", func() {
 			ginkgo.By("Creating first IPAddressPool")
 			resources := config.Resources{
-				Pools: []metallbv1beta1.IPAddressPool{
+				Pools: []metallbv1.IPAddressPool{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "webhooks-test1",
 						},
-						Spec: metallbv1beta1.IPAddressPoolSpec{
+						Spec: metallbv1.IPAddressPoolSpec{
 							Addresses: []string{
 								"1.1.1.1-1.1.1.100",
 							},
@@ -81,11 +80,11 @@ var _ = ginkgo.Describe("Webhooks", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			ginkgo.By("Creating second IPAddressPool with overlapping addresses defined by address range")
-			resources.Pools = append(resources.Pools, metallbv1beta1.IPAddressPool{
+			resources.Pools = append(resources.Pools, metallbv1.IPAddressPool{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "webhooks-test2",
 				},
-				Spec: metallbv1beta1.IPAddressPoolSpec{
+				Spec: metallbv1.IPAddressPoolSpec{
 					Addresses: []string{
 						"1.1.1.15-1.1.1.20",
 					},
@@ -112,12 +111,12 @@ var _ = ginkgo.Describe("Webhooks", func() {
 		ginkgo.It("Should recognize invalid AggregationLength", func() {
 			ginkgo.By("Creating AddressPool")
 			resources := config.Resources{
-				Pools: []metallbv1beta1.IPAddressPool{
+				Pools: []metallbv1.IPAddressPool{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "pool-webhooks-test",
 						},
-						Spec: metallbv1beta1.IPAddressPoolSpec{
+						Spec: metallbv1.IPAddressPoolSpec{
 							Addresses: []string{
 								"1.1.1.0/28",
 							},
@@ -129,12 +128,12 @@ var _ = ginkgo.Describe("Webhooks", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			ginkgo.By("Creating BGPAdvertisement")
-			resources.BGPAdvs = []metallbv1beta1.BGPAdvertisement{
+			resources.BGPAdvs = []metallbv1.BGPAdvertisement{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "adv-webhooks-test",
 					},
-					Spec: metallbv1beta1.BGPAdvertisementSpec{
+					Spec: metallbv1.BGPAdvertisementSpec{
 						AggregationLength: ptr.To(int32(26)),
 						IPAddressPools:    []string{"pool-webhooks-test"},
 					},
@@ -148,12 +147,12 @@ var _ = ginkgo.Describe("Webhooks", func() {
 		ginkgo.It("Should reject serviceSelectors with non-default aggregationLength", func() {
 			ginkgo.By("Creating AddressPool")
 			resources := config.Resources{
-				Pools: []metallbv1beta1.IPAddressPool{
+				Pools: []metallbv1.IPAddressPool{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "pool-webhooks-test",
 						},
-						Spec: metallbv1beta1.IPAddressPoolSpec{
+						Spec: metallbv1.IPAddressPoolSpec{
 							Addresses: []string{
 								"1.1.1.0/24",
 							},
@@ -165,12 +164,12 @@ var _ = ginkgo.Describe("Webhooks", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			ginkgo.By("Creating BGPAdvertisement with serviceSelectors and aggregationLength")
-			resources.BGPAdvs = []metallbv1beta1.BGPAdvertisement{
+			resources.BGPAdvs = []metallbv1.BGPAdvertisement{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "adv-webhooks-test",
 					},
-					Spec: metallbv1beta1.BGPAdvertisementSpec{
+					Spec: metallbv1.BGPAdvertisementSpec{
 						AggregationLength: ptr.To(int32(24)),
 						IPAddressPools:    []string{"pool-webhooks-test"},
 						ServiceSelectors: []metav1.LabelSelector{
@@ -191,12 +190,12 @@ var _ = ginkgo.Describe("Webhooks", func() {
 		ginkgo.It("Should reject invalid BGPPeer IP address", func() {
 			ginkgo.By("Creating BGPPeer")
 			resources := config.Resources{
-				Peers: []metallbv1beta2.BGPPeer{
+				Peers: []metallbv1.BGPPeer{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "webhooks-test",
 						},
-						Spec: metallbv1beta2.BGPPeerSpec{
+						Spec: metallbv1.BGPPeerSpec{
 							Address: "1.1.1",
 							ASN:     64500,
 							MyASN:   1000,
@@ -214,13 +213,13 @@ var _ = ginkgo.Describe("Webhooks", func() {
 		ginkgo.DescribeTable("reject a new invalid Community", func(community, expectedError string) {
 			ginkgo.By("Creating invalid Community")
 			resources := config.Resources{
-				Communities: []metallbv1beta1.Community{
+				Communities: []metallbv1.Community{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "community-webhooks-test",
 						},
-						Spec: metallbv1beta1.CommunitySpec{
-							Communities: []metallbv1beta1.CommunityAlias{
+						Spec: metallbv1.CommunitySpec{
+							Communities: []metallbv1.CommunityAlias{
 								{
 									Name:  "INVALID_COMMUNITY",
 									Value: community,
@@ -240,7 +239,7 @@ var _ = ginkgo.Describe("Webhooks", func() {
 		ginkgo.DescribeTable("reject an update to an invalid Community", func(community, expectedError string) {
 			ginkgo.By("Creating Community")
 			resources := config.Resources{
-				Communities: []metallbv1beta1.Community{
+				Communities: []metallbv1.Community{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "community-webhooks-test",
@@ -252,8 +251,8 @@ var _ = ginkgo.Describe("Webhooks", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			ginkgo.By("Updating community")
-			resources.Communities[0].Spec = metallbv1beta1.CommunitySpec{
-				Communities: []metallbv1beta1.CommunityAlias{
+			resources.Communities[0].Spec = metallbv1.CommunitySpec{
+				Communities: []metallbv1.CommunityAlias{
 					{
 						Name:  "INVALID_COMMUNITY",
 						Value: community,
@@ -270,13 +269,13 @@ var _ = ginkgo.Describe("Webhooks", func() {
 		ginkgo.DescribeTable("reject Community duplications", func(community string) {
 			ginkgo.By("Creating duplicates in the same Community")
 			resources := config.Resources{
-				Communities: []metallbv1beta1.Community{
+				Communities: []metallbv1.Community{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "community-webhooks-test",
 						},
-						Spec: metallbv1beta1.CommunitySpec{
-							Communities: []metallbv1beta1.CommunityAlias{
+						Spec: metallbv1.CommunitySpec{
+							Communities: []metallbv1.CommunityAlias{
 								{
 									Name:  "DUP_COMMUNITY",
 									Value: community,
@@ -296,13 +295,13 @@ var _ = ginkgo.Describe("Webhooks", func() {
 
 			ginkgo.By("Creating duplicates across two different Communities")
 			resources = config.Resources{
-				Communities: []metallbv1beta1.Community{
+				Communities: []metallbv1.Community{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "community-webhooks-test1",
 						},
-						Spec: metallbv1beta1.CommunitySpec{
-							Communities: []metallbv1beta1.CommunityAlias{
+						Spec: metallbv1.CommunitySpec{
+							Communities: []metallbv1.CommunityAlias{
 								{
 									Name:  "DUP_COMMUNITY",
 									Value: community,
@@ -314,8 +313,8 @@ var _ = ginkgo.Describe("Webhooks", func() {
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "community-webhooks-test2",
 						},
-						Spec: metallbv1beta1.CommunitySpec{
-							Communities: []metallbv1beta1.CommunityAlias{
+						Spec: metallbv1.CommunitySpec{
+							Communities: []metallbv1.CommunityAlias{
 								{
 									Name:  "DUP_COMMUNITY",
 									Value: community,
@@ -334,18 +333,18 @@ var _ = ginkgo.Describe("Webhooks", func() {
 	})
 
 	ginkgo.Context("For BFDProfile", func() {
-		testBFDProfile := metallbv1beta1.BFDProfile{
+		testBFDProfile := metallbv1.BFDProfile{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "bfdprofile-webhooks-test",
 				Namespace: metallb.Namespace,
 			},
 		}
-		testPeer := metallbv1beta2.BGPPeer{
+		testPeer := metallbv1.BGPPeer{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "bgppeer-webhooks-test",
 				Namespace: metallb.Namespace,
 			},
-			Spec: metallbv1beta2.BGPPeerSpec{
+			Spec: metallbv1.BGPPeerSpec{
 				BFDProfile: testBFDProfile.Name,
 				ASN:        1234,
 				MyASN:      1234,
@@ -355,8 +354,8 @@ var _ = ginkgo.Describe("Webhooks", func() {
 		ginkgo.It("Should produce an error when deleting a profile used by a BGPPeer", func() {
 			ginkgo.By("Creating BFDProfile and BGPPeer")
 			resources := config.Resources{
-				BFDProfiles: []metallbv1beta1.BFDProfile{testBFDProfile},
-				Peers:       []metallbv1beta2.BGPPeer{testPeer},
+				BFDProfiles: []metallbv1.BFDProfile{testBFDProfile},
+				Peers:       []metallbv1.BGPPeer{testPeer},
 			}
 			err := ConfigUpdater.Update(resources)
 			Expect(err).NotTo(HaveOccurred())
@@ -383,7 +382,7 @@ var _ = ginkgo.DescribeTable("Webhooks namespace validation",
 		Expect(err).To(MatchError(ContainSubstring(fmt.Sprintf("resource must be created in %s namespace", metallb.Namespace))))
 	},
 	ginkgo.Entry("Should reject creating BFDProfile in a different namespace", &config.Resources{
-		BFDProfiles: []metallbv1beta1.BFDProfile{
+		BFDProfiles: []metallbv1.BFDProfile{
 			{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "bfdprofile-webhooks-test",
@@ -392,12 +391,12 @@ var _ = ginkgo.DescribeTable("Webhooks namespace validation",
 		},
 	}),
 	ginkgo.Entry("Should reject creating IPAddressPool in a different namespace", &config.Resources{
-		Pools: []metallbv1beta1.IPAddressPool{
+		Pools: []metallbv1.IPAddressPool{
 			{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "webhooks-test1",
 				},
-				Spec: metallbv1beta1.IPAddressPoolSpec{
+				Spec: metallbv1.IPAddressPoolSpec{
 					Addresses: []string{
 						"1.1.1.1-1.1.1.100",
 					},
@@ -406,12 +405,12 @@ var _ = ginkgo.DescribeTable("Webhooks namespace validation",
 		},
 	}),
 	ginkgo.Entry("Should reject creating BGPPeer in a different namespace", &config.Resources{
-		Peers: []metallbv1beta2.BGPPeer{
+		Peers: []metallbv1.BGPPeer{
 			{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "webhooks-test",
 				},
-				Spec: metallbv1beta2.BGPPeerSpec{
+				Spec: metallbv1.BGPPeerSpec{
 					Address: "1.1.1",
 					ASN:     64500,
 					MyASN:   1000,
@@ -420,12 +419,12 @@ var _ = ginkgo.DescribeTable("Webhooks namespace validation",
 		},
 	}),
 	ginkgo.Entry("Should reject creating BGPAdvertisement in a different namespace", &config.Resources{
-		BGPAdvs: []metallbv1beta1.BGPAdvertisement{
+		BGPAdvs: []metallbv1.BGPAdvertisement{
 			{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "adv-webhooks-test",
 				},
-				Spec: metallbv1beta1.BGPAdvertisementSpec{
+				Spec: metallbv1.BGPAdvertisementSpec{
 					AggregationLength: ptr.To(int32(26)),
 					IPAddressPools:    []string{"pool-webhooks-test"},
 				},
@@ -433,7 +432,7 @@ var _ = ginkgo.DescribeTable("Webhooks namespace validation",
 		},
 	}),
 	ginkgo.Entry("Should reject creating L2Advertisement in a different namespace", &config.Resources{
-		L2Advs: []metallbv1beta1.L2Advertisement{
+		L2Advs: []metallbv1.L2Advertisement{
 			{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "l2adv-webhooks-test",
@@ -442,13 +441,13 @@ var _ = ginkgo.DescribeTable("Webhooks namespace validation",
 		},
 	}),
 	ginkgo.Entry("Should reject creating Community in a different namespace", &config.Resources{
-		Communities: []metallbv1beta1.Community{
+		Communities: []metallbv1.Community{
 			{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "community-webhooks-test",
 				},
-				Spec: metallbv1beta1.CommunitySpec{
-					Communities: []metallbv1beta1.CommunityAlias{
+				Spec: metallbv1.CommunitySpec{
+					Communities: []metallbv1.CommunityAlias{
 						{
 							Name:  "test-community",
 							Value: "1234:1",

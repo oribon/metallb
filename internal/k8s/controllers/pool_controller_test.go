@@ -23,7 +23,7 @@ import (
 	"github.com/go-kit/log"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	v1beta1 "go.universe.tf/metallb/api/v1beta1"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 	metallbcfg "go.universe.tf/metallb/internal/config"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -126,7 +126,7 @@ func TestPoolController(t *testing.T) {
 
 			initObjects := objectsFromResources(resources)
 
-			configStateRef := &v1beta1.ConfigurationState{
+			configStateRef := &metallbv1.ConfigurationState{
 				ObjectMeta: v1.ObjectMeta{
 					Name:      "controller",
 					Namespace: testNamespace,
@@ -183,7 +183,7 @@ func TestPoolController(t *testing.T) {
 				t.Errorf("%s: call force reload expected: %v, got: %v", test.desc, test.expectForceReloadCalled, calledForceReload)
 			}
 
-			var gotConfigState v1beta1.ConfigurationState
+			var gotConfigState metallbv1.ConfigurationState
 			if err := fakeClient.Get(context.Background(), types.NamespacedName{
 				Name:      configStateRef.Name,
 				Namespace: configStateRef.Namespace,
@@ -201,27 +201,27 @@ func TestPoolController(t *testing.T) {
 
 var (
 	poolControllerValidResources = metallbcfg.ClusterResources{
-		Pools: []v1beta1.IPAddressPool{
+		Pools: []metallbv1.IPAddressPool{
 			{
 				ObjectMeta: v1.ObjectMeta{
 					Name:      "pool1",
 					Namespace: testNamespace,
 				},
-				Spec: v1beta1.IPAddressPoolSpec{
+				Spec: metallbv1.IPAddressPoolSpec{
 					Addresses: []string{
 						"10.20.0.0/16",
 					},
 				},
 			},
 		},
-		Communities: []v1beta1.Community{
+		Communities: []metallbv1.Community{
 			{
 				ObjectMeta: v1.ObjectMeta{
 					Name:      "community",
 					Namespace: testNamespace,
 				},
-				Spec: v1beta1.CommunitySpec{
-					Communities: []v1beta1.CommunityAlias{
+				Spec: metallbv1.CommunitySpec{
+					Communities: []metallbv1.CommunityAlias{
 						{
 							Name:  "bar",
 							Value: "1234:4567",
@@ -233,7 +233,7 @@ var (
 	}
 
 	poolControllerInvalidResources = metallbcfg.ClusterResources{
-		Pools: []v1beta1.IPAddressPool{
+		Pools: []metallbv1.IPAddressPool{
 			{
 				ObjectMeta: v1.ObjectMeta{
 					Name:      "pool1",

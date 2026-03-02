@@ -10,13 +10,13 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"go.universe.tf/metallb/api/v1beta1"
-	v1 "k8s.io/api/core/v1"
+	metallbv1 "go.universe.tf/metallb/api/v1"
+	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func L2ForService(cs client.Client, svc *v1.Service) (*v1beta1.ServiceL2Status, error) {
-	statusList := v1beta1.ServiceL2StatusList{}
+func L2ForService(cs client.Client, svc *corev1.Service) (*metallbv1.ServiceL2Status, error) {
+	statusList := metallbv1.ServiceL2StatusList{}
 	err := cs.List(context.TODO(), &statusList,
 		client.InNamespace(metallb.Namespace),
 		client.MatchingLabels{

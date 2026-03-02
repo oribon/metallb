@@ -15,7 +15,7 @@ import (
 	"go.universe.tf/e2etest/pkg/k8sclient"
 	"go.universe.tf/e2etest/pkg/mac"
 	"go.universe.tf/e2etest/pkg/service"
-	metallbv1beta1 "go.universe.tf/metallb/api/v1beta1"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 
 	jigservice "go.universe.tf/e2etest/pkg/jigservice"
 	corev1 "k8s.io/api/core/v1"
@@ -60,12 +60,12 @@ var _ = ginkgo.Describe("L2", func() {
 	ginkgo.Context("Node Selector", func() {
 		ginkgo.BeforeEach(func() {
 			resources := config.Resources{
-				Pools: []metallbv1beta1.IPAddressPool{
+				Pools: []metallbv1.IPAddressPool{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "l2-test",
 						},
-						Spec: metallbv1beta1.IPAddressPoolSpec{
+						Spec: metallbv1.IPAddressPoolSpec{
 							Addresses: []string{
 								IPV4ServiceRange,
 								IPV6ServiceRange},
@@ -88,18 +88,18 @@ var _ = ginkgo.Describe("L2", func() {
 			allNodes, err := cs.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			for _, node := range allNodes.Items {
-				l2Advertisement := metallbv1beta1.L2Advertisement{
+				l2Advertisement := metallbv1.L2Advertisement{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "with-selector",
 					},
-					Spec: metallbv1beta1.L2AdvertisementSpec{
+					Spec: metallbv1.L2AdvertisementSpec{
 						NodeSelectors: k8s.SelectorsForNodes([]corev1.Node{node}),
 					},
 				}
 
 				ginkgo.By(fmt.Sprintf("Assigning the advertisement to node %s", node.Name))
 				resources := config.Resources{
-					L2Advs: []metallbv1beta1.L2Advertisement{l2Advertisement},
+					L2Advs: []metallbv1.L2Advertisement{l2Advertisement},
 				}
 
 				err := ConfigUpdater.Update(resources)
@@ -144,12 +144,12 @@ var _ = ginkgo.Describe("L2", func() {
 				})
 			Expect(err).NotTo(HaveOccurred())
 
-			l2Advertisements := []metallbv1beta1.L2Advertisement{
+			l2Advertisements := []metallbv1.L2Advertisement{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "with-selector",
 					},
-					Spec: metallbv1beta1.L2AdvertisementSpec{
+					Spec: metallbv1.L2AdvertisementSpec{
 						NodeSelectors: k8s.SelectorsForNodes([]corev1.Node{allNodes.Items[1]}),
 					},
 				}, {
@@ -188,11 +188,11 @@ var _ = ginkgo.Describe("L2", func() {
 			ingressIP := jigservice.GetIngressPoint(
 				&svc.Status.LoadBalancer.Ingress[0])
 
-			l2Advertisement := metallbv1beta1.L2Advertisement{
+			l2Advertisement := metallbv1.L2Advertisement{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "with-selector",
 				},
-				Spec: metallbv1beta1.L2AdvertisementSpec{
+				Spec: metallbv1.L2AdvertisementSpec{
 					NodeSelectors: []metav1.LabelSelector{
 						{
 							MatchLabels: map[string]string{
@@ -205,7 +205,7 @@ var _ = ginkgo.Describe("L2", func() {
 
 			ginkgo.By("Setting advertisement with node selector (no matching nodes)")
 			resources := config.Resources{
-				L2Advs: []metallbv1beta1.L2Advertisement{l2Advertisement},
+				L2Advs: []metallbv1.L2Advertisement{l2Advertisement},
 			}
 
 			err := ConfigUpdater.Update(resources)

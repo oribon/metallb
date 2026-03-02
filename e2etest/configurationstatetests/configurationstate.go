@@ -18,8 +18,7 @@ import (
 	"go.universe.tf/e2etest/pkg/k8sclient"
 
 	"go.universe.tf/e2etest/pkg/metallb"
-	metallbv1beta1 "go.universe.tf/metallb/api/v1beta1"
-	metallbv1beta2 "go.universe.tf/metallb/api/v1beta2"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,8 +30,8 @@ var (
 	ConfigUpdater config.Updater
 	Reporter      *k8sreporter.KubernetesReporter
 
-	validStatus = metallbv1beta1.ConfigurationStateStatus{
-		Result:       metallbv1beta1.ConfigurationResultValid,
+	validStatus = metallbv1.ConfigurationStateStatus{
+		Result:       metallbv1.ConfigurationResultValid,
 		ErrorSummary: "",
 	}
 )
@@ -65,8 +64,8 @@ var _ = ginkgo.Describe("ConfigurationState", func() {
 
 	ginkgo.It("speaker should have invalid result when BGPPeer references secret with wrong type", func() {
 		stateName := "speaker-" + allNodes.Items[0].Name
-		wantStatus := metallbv1beta1.ConfigurationStateStatus{
-			Result:       metallbv1beta1.ConfigurationResultInvalid,
+		wantStatus := metallbv1.ConfigurationStateStatus{
+			Result:       metallbv1.ConfigurationResultInvalid,
 			ErrorSummary: "configuration error: parsing peer peer1 secret type mismatch on \"metallb-system\"/\"bgp-password\", type \"kubernetes.io/basic-auth\" is expected \nfailed to parse peer peer1 password secret",
 		}
 
@@ -88,12 +87,12 @@ var _ = ginkgo.Describe("ConfigurationState", func() {
 		})
 
 		resources := config.Resources{
-			Peers: []metallbv1beta2.BGPPeer{
+			Peers: []metallbv1.BGPPeer{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "peer1",
 					},
-					Spec: metallbv1beta2.BGPPeerSpec{
+					Spec: metallbv1.BGPPeerSpec{
 						MyASN:   64512,
 						ASN:     64513,
 						Address: "192.168.1.1",
@@ -141,19 +140,19 @@ var _ = ginkgo.Describe("ConfigurationState", func() {
 
 	ginkgo.It("speaker should have invalid result when BFD profile is missing", func() {
 		stateName := "speaker-" + allNodes.Items[0].Name
-		wantStatus := metallbv1beta1.ConfigurationStateStatus{
-			Result:       metallbv1beta1.ConfigurationResultInvalid,
+		wantStatus := metallbv1.ConfigurationStateStatus{
+			Result:       metallbv1.ConfigurationResultInvalid,
 			ErrorSummary: "configuration error: peer peer1 referencing non existing bfd profile my-bfd-profile",
 		}
 
 		ginkgo.By("Creating BGPPeer referencing non-existent BFD profile")
 		resources := config.Resources{
-			Peers: []metallbv1beta2.BGPPeer{
+			Peers: []metallbv1.BGPPeer{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "peer1",
 					},
-					Spec: metallbv1beta2.BGPPeerSpec{
+					Spec: metallbv1.BGPPeerSpec{
 						MyASN:      64512,
 						ASN:        64513,
 						Address:    "192.168.1.1",
@@ -172,7 +171,7 @@ var _ = ginkgo.Describe("ConfigurationState", func() {
 		}, 30*time.Second, 5*time.Second).Should(Succeed())
 
 		ginkgo.By("Creating missing BFD profile")
-		resources.BFDProfiles = []metallbv1beta1.BFDProfile{
+		resources.BFDProfiles = []metallbv1.BFDProfile{
 			{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "my-bfd-profile",
@@ -194,7 +193,7 @@ var _ = ginkgo.Describe("ConfigurationState", func() {
 func allStatesExist(allNodes *corev1.NodeList) error {
 	k8sClient := ConfigUpdater.Client()
 
-	want := []metallbv1beta1.ConfigurationState{
+	want := []metallbv1.ConfigurationState{
 		{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "controller",
@@ -208,7 +207,7 @@ func allStatesExist(allNodes *corev1.NodeList) error {
 	}
 
 	for _, node := range allNodes.Items {
-		want = append(want, metallbv1beta1.ConfigurationState{
+		want = append(want, metallbv1.ConfigurationState{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "speaker-" + node.Name,
 				Namespace: metallb.Namespace,
@@ -221,16 +220,16 @@ func allStatesExist(allNodes *corev1.NodeList) error {
 		})
 	}
 
-	var got metallbv1beta1.ConfigurationStateList
+	var got metallbv1.ConfigurationStateList
 	if err := k8sClient.List(context.Background(), &got, client.InNamespace(metallb.Namespace)); err != nil {
 		return fmt.Errorf("failed to list ConfigurationStates: %w", err)
 	}
 
 	opts := []cmp.Option{
 		cmpopts.IgnoreFields(metav1.ObjectMeta{}, "ResourceVersion", "UID", "CreationTimestamp", "Generation", "ManagedFields"),
-		cmpopts.IgnoreFields(metallbv1beta1.ConfigurationState{}, "TypeMeta"),
-		cmpopts.IgnoreFields(metallbv1beta1.ConfigurationStateStatus{}, "Conditions"),
-		cmpopts.SortSlices(func(a, b metallbv1beta1.ConfigurationState) bool {
+		cmpopts.IgnoreFields(metallbv1.ConfigurationState{}, "TypeMeta"),
+		cmpopts.IgnoreFields(metallbv1.ConfigurationStateStatus{}, "Conditions"),
+		cmpopts.SortSlices(func(a, b metallbv1.ConfigurationState) bool {
 			return a.Name < b.Name
 		}),
 	}
@@ -241,9 +240,9 @@ func allStatesExist(allNodes *corev1.NodeList) error {
 	return nil
 }
 
-func stateMatches(stateName string, wantStatus metallbv1beta1.ConfigurationStateStatus) error {
+func stateMatches(stateName string, wantStatus metallbv1.ConfigurationStateStatus) error {
 	k8sClient := ConfigUpdater.Client()
-	var got metallbv1beta1.ConfigurationState
+	var got metallbv1.ConfigurationState
 	if err := k8sClient.Get(context.Background(), types.NamespacedName{
 		Name:      stateName,
 		Namespace: metallb.Namespace,

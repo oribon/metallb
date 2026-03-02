@@ -14,8 +14,7 @@ import (
 	"go.universe.tf/e2etest/pkg/k8sclient"
 	"go.universe.tf/e2etest/pkg/metallb"
 	testservice "go.universe.tf/e2etest/pkg/service"
-	metallbv1beta1 "go.universe.tf/metallb/api/v1beta1"
-	"go.universe.tf/metallb/api/v1beta2"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -89,31 +88,31 @@ var _ = ginkgo.Describe("BGP Peer Selector", func() {
 				Peers: metallb.PeersForContainers(FRRContainers, ipFamily),
 			}
 
-			pool1 := metallbv1beta1.IPAddressPool{
+			pool1 := metallbv1.IPAddressPool{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-addresspool1",
 				},
-				Spec: metallbv1beta1.IPAddressPoolSpec{
+				Spec: metallbv1.IPAddressPoolSpec{
 					Addresses: addressRange1,
 				},
 			}
 
-			pool2 := metallbv1beta1.IPAddressPool{
+			pool2 := metallbv1.IPAddressPool{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-addresspool2",
 				},
-				Spec: metallbv1beta1.IPAddressPoolSpec{
+				Spec: metallbv1.IPAddressPoolSpec{
 					Addresses: addressRange2,
 				},
 			}
 
 			ginkgo.By(fmt.Sprintf("setting peer selector for addresspool number 1 to peer %s", frrContainerForAdv1.Name))
 			bgpPeersForAdv := getPeersNames(frrContainerForAdv1.Name, resources.Peers)
-			bgpAdv1 := metallbv1beta1.BGPAdvertisement{
+			bgpAdv1 := metallbv1.BGPAdvertisement{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-advertisement1",
 				},
-				Spec: metallbv1beta1.BGPAdvertisementSpec{
+				Spec: metallbv1.BGPAdvertisementSpec{
 					IPAddressPools: []string{"test-addresspool1"},
 					Peers:          bgpPeersForAdv,
 				},
@@ -121,18 +120,18 @@ var _ = ginkgo.Describe("BGP Peer Selector", func() {
 
 			ginkgo.By(fmt.Sprintf("setting peer selector for addresspool number 2 to peer %s", frrContainerForAdv2.Name))
 			bgpPeersForAdv = getPeersNames(frrContainerForAdv2.Name, resources.Peers)
-			bgpAdv2 := metallbv1beta1.BGPAdvertisement{
+			bgpAdv2 := metallbv1.BGPAdvertisement{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-advertisement2",
 				},
-				Spec: metallbv1beta1.BGPAdvertisementSpec{
+				Spec: metallbv1.BGPAdvertisementSpec{
 					IPAddressPools: []string{"test-addresspool2"},
 					Peers:          bgpPeersForAdv,
 				},
 			}
 
-			resources.Pools = []metallbv1beta1.IPAddressPool{pool1, pool2}
-			resources.BGPAdvs = []metallbv1beta1.BGPAdvertisement{bgpAdv1, bgpAdv2}
+			resources.Pools = []metallbv1.IPAddressPool{pool1, pool2}
+			resources.BGPAdvs = []metallbv1.BGPAdvertisement{bgpAdv1, bgpAdv2}
 
 			err := ConfigUpdater.Update(resources)
 			Expect(err).NotTo(HaveOccurred())
@@ -197,11 +196,11 @@ var _ = ginkgo.Describe("BGP Peer Selector", func() {
 				Peers: metallb.PeersForContainers(FRRContainers, ipFamily),
 			}
 
-			pool := metallbv1beta1.IPAddressPool{
+			pool := metallbv1.IPAddressPool{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-addresspool",
 				},
-				Spec: metallbv1beta1.IPAddressPoolSpec{
+				Spec: metallbv1.IPAddressPoolSpec{
 					Addresses: addressRange,
 				},
 			}
@@ -209,11 +208,11 @@ var _ = ginkgo.Describe("BGP Peer Selector", func() {
 			ginkgo.By(fmt.Sprintf("setting bgpadvertisement 1 with peer selector to peer %s", frrContainerForAdv1.Name))
 			bgpPeersForAdv := getPeersNames(frrContainerForAdv1.Name, resources.Peers)
 			community1 := "65531:65281"
-			bgpAdv1 := metallbv1beta1.BGPAdvertisement{
+			bgpAdv1 := metallbv1.BGPAdvertisement{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-advertisement1",
 				},
-				Spec: metallbv1beta1.BGPAdvertisementSpec{
+				Spec: metallbv1.BGPAdvertisementSpec{
 					IPAddressPools: []string{"test-addresspool"},
 					Peers:          bgpPeersForAdv,
 					Communities:    []string{community1},
@@ -223,19 +222,19 @@ var _ = ginkgo.Describe("BGP Peer Selector", func() {
 			ginkgo.By(fmt.Sprintf("setting bgpadvertisement 2 with peer selector to peer %s", frrContainerForAdv2.Name))
 			bgpPeersForAdv = getPeersNames(frrContainerForAdv2.Name, resources.Peers)
 			community2 := "65532:65282"
-			bgpAdv2 := metallbv1beta1.BGPAdvertisement{
+			bgpAdv2 := metallbv1.BGPAdvertisement{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-advertisement2",
 				},
-				Spec: metallbv1beta1.BGPAdvertisementSpec{
+				Spec: metallbv1.BGPAdvertisementSpec{
 					IPAddressPools: []string{"test-addresspool"},
 					Peers:          bgpPeersForAdv,
 					Communities:    []string{community2},
 				},
 			}
 
-			resources.Pools = []metallbv1beta1.IPAddressPool{pool}
-			resources.BGPAdvs = []metallbv1beta1.BGPAdvertisement{bgpAdv1, bgpAdv2}
+			resources.Pools = []metallbv1.IPAddressPool{pool}
+			resources.BGPAdvs = []metallbv1.BGPAdvertisement{bgpAdv1, bgpAdv2}
 
 			err := ConfigUpdater.Update(resources)
 			Expect(err).NotTo(HaveOccurred())
@@ -277,7 +276,7 @@ var _ = ginkgo.Describe("BGP Peer Selector", func() {
 			}))
 })
 
-func getPeersNames(frrContainerName string, peers []v1beta2.BGPPeer) []string {
+func getPeersNames(frrContainerName string, peers []metallbv1.BGPPeer) []string {
 	res := []string{}
 	for _, p := range peers {
 		if strings.Contains(p.Name, frrContainerName) {

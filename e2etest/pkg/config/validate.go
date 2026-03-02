@@ -12,10 +12,10 @@ import (
 	"github.com/mikioh/ipaddr"
 	. "github.com/onsi/gomega"
 	"go.universe.tf/e2etest/pkg/iprange"
-	metallbv1beta1 "go.universe.tf/metallb/api/v1beta1"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 )
 
-func ValidateIPInRange(addressPools []metallbv1beta1.IPAddressPool, ip string) error {
+func ValidateIPInRange(addressPools []metallbv1.IPAddressPool, ip string) error {
 	input := net.ParseIP(ip)
 	for _, addressPool := range addressPools {
 		for _, address := range addressPool.Spec.Addresses {
@@ -54,7 +54,7 @@ func GetIPFromRangeByIndex(ipRange string, index int) (string, error) {
 }
 
 // PoolCount returns the number of total and ipv4 and ipv6 addresses in a given Pool.
-func PoolCount(p metallbv1beta1.IPAddressPool) (int64, int64, int64, error) {
+func PoolCount(p metallbv1.IPAddressPool) (int64, int64, int64, error) {
 	var total int64
 	var ipv4 int64
 	var ipv6 int64

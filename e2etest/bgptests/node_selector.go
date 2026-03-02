@@ -14,8 +14,7 @@ import (
 	"go.universe.tf/e2etest/pkg/k8sclient"
 	"go.universe.tf/e2etest/pkg/metallb"
 	testservice "go.universe.tf/e2etest/pkg/service"
-	metallbv1beta1 "go.universe.tf/metallb/api/v1beta1"
-	metallbv1beta2 "go.universe.tf/metallb/api/v1beta2"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/onsi/ginkgo/v2"
@@ -70,30 +69,30 @@ var _ = ginkgo.Describe("BGP Node Selector", func() {
 			expectedNodesForSecondPool := nodesForSelection(allNodes.Items, nodesForSecondPool)
 
 			resources := config.Resources{
-				Pools: []metallbv1beta1.IPAddressPool{
+				Pools: []metallbv1.IPAddressPool{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "first-pool",
 						},
-						Spec: metallbv1beta1.IPAddressPoolSpec{
+						Spec: metallbv1.IPAddressPoolSpec{
 							Addresses: []string{addresses[0]},
 						},
 					}, {
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "second-pool",
 						},
-						Spec: metallbv1beta1.IPAddressPoolSpec{
+						Spec: metallbv1.IPAddressPoolSpec{
 							Addresses: []string{addresses[1]},
 						},
 					},
 				},
 				Peers: metallb.PeersForContainers(FRRContainers, pairingIPFamily),
-				BGPAdvs: []metallbv1beta1.BGPAdvertisement{
+				BGPAdvs: []metallbv1.BGPAdvertisement{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "first-adv",
 						},
-						Spec: metallbv1beta1.BGPAdvertisementSpec{
+						Spec: metallbv1.BGPAdvertisementSpec{
 							NodeSelectors:  k8s.SelectorsForNodes(expectedNodesForFirstPool),
 							IPAddressPools: []string{"first-pool"},
 						},
@@ -101,7 +100,7 @@ var _ = ginkgo.Describe("BGP Node Selector", func() {
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "second-adv",
 						},
-						Spec: metallbv1beta1.BGPAdvertisementSpec{
+						Spec: metallbv1.BGPAdvertisementSpec{
 							NodeSelectors:  k8s.SelectorsForNodes(expectedNodesForSecondPool),
 							IPAddressPools: []string{"second-pool"},
 						},
@@ -143,23 +142,23 @@ var _ = ginkgo.Describe("BGP Node Selector", func() {
 		expectedNodesForSecondAdv := nodesForSelection(allNodes.Items, nodesForSecondAdv)
 
 		resources := config.Resources{
-			Pools: []metallbv1beta1.IPAddressPool{
+			Pools: []metallbv1.IPAddressPool{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "first-pool",
 					},
-					Spec: metallbv1beta1.IPAddressPoolSpec{
+					Spec: metallbv1.IPAddressPoolSpec{
 						Addresses: []string{address},
 					},
 				},
 			},
 			Peers: metallb.PeersForContainers(FRRContainers, pairingIPFamily),
-			BGPAdvs: []metallbv1beta1.BGPAdvertisement{
+			BGPAdvs: []metallbv1.BGPAdvertisement{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "first-adv",
 					},
-					Spec: metallbv1beta1.BGPAdvertisementSpec{
+					Spec: metallbv1.BGPAdvertisementSpec{
 						NodeSelectors:  k8s.SelectorsForNodes(expectedNodesForFirstAdv),
 						Communities:    []string{CommunityNoAdv},
 						IPAddressPools: []string{"first-pool"},
@@ -168,7 +167,7 @@ var _ = ginkgo.Describe("BGP Node Selector", func() {
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "second-adv",
 					},
-					Spec: metallbv1beta1.BGPAdvertisementSpec{
+					Spec: metallbv1.BGPAdvertisementSpec{
 						NodeSelectors:  k8s.SelectorsForNodes(expectedNodesForSecondAdv),
 						Communities:    []string{CommunityGracefulShut},
 						IPAddressPools: []string{"first-pool"},
@@ -204,23 +203,23 @@ var _ = ginkgo.Describe("BGP Node Selector", func() {
 
 			ginkgo.By("Setting advertisement with node selector (no matching nodes)")
 			resources := config.Resources{
-				Pools: []metallbv1beta1.IPAddressPool{
+				Pools: []metallbv1.IPAddressPool{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "test-pool",
 						},
-						Spec: metallbv1beta1.IPAddressPoolSpec{
+						Spec: metallbv1.IPAddressPoolSpec{
 							Addresses: []string{address},
 						},
 					},
 				},
 				Peers: metallb.PeersForContainers(FRRContainers, pairingIPFamily),
-				BGPAdvs: []metallbv1beta1.BGPAdvertisement{
+				BGPAdvs: []metallbv1.BGPAdvertisement{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "test-adv",
 						},
-						Spec: metallbv1beta1.BGPAdvertisementSpec{
+						Spec: metallbv1.BGPAdvertisementSpec{
 							Communities:    []string{CommunityNoAdv},
 							IPAddressPools: []string{"test-pool"},
 							NodeSelectors: []metav1.LabelSelector{
@@ -272,18 +271,18 @@ var _ = ginkgo.Describe("BGP Node Selector", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			resources := config.Resources{
-				Pools: []metallbv1beta1.IPAddressPool{
+				Pools: []metallbv1.IPAddressPool{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "pool",
 						},
-						Spec: metallbv1beta1.IPAddressPoolSpec{
+						Spec: metallbv1.IPAddressPoolSpec{
 							Addresses: []string{"192.168.10.0/24"},
 						},
 					},
 				},
 				Peers: metallb.PeersForContainers(FRRContainers, ipfamily.IPv4,
-					func(p *metallbv1beta2.BGPPeer) {
+					func(p *metallbv1.BGPPeer) {
 						for containerIndx, nodesIndexes := range nodesForPeers {
 							if containerIndx >= len(FRRContainers) {
 								ginkgo.Skip(fmt.Sprintf("Asking for container %d, not enough containers %d", containerIndx, len(FRRContainers)))

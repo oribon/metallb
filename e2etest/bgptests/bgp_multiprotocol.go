@@ -16,8 +16,7 @@ import (
 	"go.universe.tf/e2etest/pkg/k8sclient"
 	"go.universe.tf/e2etest/pkg/metallb"
 	testservice "go.universe.tf/e2etest/pkg/service"
-	metallbv1beta1 "go.universe.tf/metallb/api/v1beta1"
-	metallbv1beta2 "go.universe.tf/metallb/api/v1beta2"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 
 	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -34,7 +33,7 @@ var _ = ginkgo.Describe("BGP Multiprotocol", func() {
 	var cs clientset.Interface
 	testNamespace := ""
 
-	emptyBGPAdvertisement := metallbv1beta1.BGPAdvertisement{
+	emptyBGPAdvertisement := metallbv1.BGPAdvertisement{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "empty",
 		},
@@ -68,20 +67,20 @@ var _ = ginkgo.Describe("BGP Multiprotocol", func() {
 	ginkgo.Context("Multiprotocol", func() {
 		ginkgo.DescribeTable("should advertise both ipv4 and ipv6 addresses with", func(pairingFamily ipfamily.Family, poolAddresses []string, tweak testservice.Tweak) {
 			resources := config.Resources{
-				Pools: []metallbv1beta1.IPAddressPool{
+				Pools: []metallbv1.IPAddressPool{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "mp-test",
 						},
-						Spec: metallbv1beta1.IPAddressPoolSpec{
+						Spec: metallbv1.IPAddressPoolSpec{
 							Addresses: poolAddresses,
 						},
 					},
 				},
-				Peers: metallb.PeersForContainers(FRRContainers, pairingFamily, func(p *metallbv1beta2.BGPPeer) {
+				Peers: metallb.PeersForContainers(FRRContainers, pairingFamily, func(p *metallbv1.BGPPeer) {
 					p.Spec.DualStackAddressFamily = true
 				}),
-				BGPAdvs: []metallbv1beta1.BGPAdvertisement{emptyBGPAdvertisement},
+				BGPAdvs: []metallbv1.BGPAdvertisement{emptyBGPAdvertisement},
 			}
 			err := ConfigUpdater.Update(resources)
 			Expect(err).NotTo(HaveOccurred())
@@ -132,36 +131,36 @@ var _ = ginkgo.Describe("BGP Multiprotocol", func() {
 
 		ginkgo.DescribeTable("should propagate the localpreference and the communities to both ipv4 and ipv6 addresses",
 			func(ipFamily ipfamily.Family) {
-				emptyAdvertisement := metallbv1beta1.BGPAdvertisement{
+				emptyAdvertisement := metallbv1.BGPAdvertisement{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "empty",
 					},
-					Spec: metallbv1beta1.BGPAdvertisementSpec{
+					Spec: metallbv1.BGPAdvertisementSpec{
 						IPAddressPools: []string{"bgp-with-no-advertisement"},
 					},
 				}
 
-				pool := metallbv1beta1.IPAddressPool{
+				pool := metallbv1.IPAddressPool{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:   "bgp-with-advertisement",
 						Labels: map[string]string{"test": "bgp-with-advertisement"},
 					},
-					Spec: metallbv1beta1.IPAddressPoolSpec{
+					Spec: metallbv1.IPAddressPoolSpec{
 						Addresses: []string{"192.168.10.0/24",
 							"fc00:f853:0ccd:e799::0-fc00:f853:0ccd:e799::18"},
 					},
 				}
 
 				resources := config.Resources{
-					Peers: metallb.PeersForContainers(FRRContainers, ipFamily, func(p *metallbv1beta2.BGPPeer) {
+					Peers: metallb.PeersForContainers(FRRContainers, ipFamily, func(p *metallbv1.BGPPeer) {
 						p.Spec.DualStackAddressFamily = true
 					}),
-					Pools: []metallbv1beta1.IPAddressPool{pool},
-					BGPAdvs: []metallbv1beta1.BGPAdvertisement{
+					Pools: []metallbv1.IPAddressPool{pool},
+					BGPAdvs: []metallbv1.BGPAdvertisement{
 						emptyAdvertisement,
 						{
 							ObjectMeta: metav1.ObjectMeta{Name: "advertisement"},
-							Spec: metallbv1beta1.BGPAdvertisementSpec{
+							Spec: metallbv1.BGPAdvertisementSpec{
 								LocalPref:      50,
 								Communities:    []string{CommunityNoAdv},
 								IPAddressPools: []string{"bgp-with-advertisement"},

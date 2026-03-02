@@ -3,15 +3,15 @@
 package config
 
 import (
-	metallbv1beta1 "go.universe.tf/metallb/api/v1beta1"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 	"k8s.io/utils/ptr"
 )
 
 const BGP = "bgp"
 const L2 = "layer2"
 
-func BFDProfileWithDefaults(profile metallbv1beta1.BFDProfile, multiHop bool) metallbv1beta1.BFDProfile {
-	res := metallbv1beta1.BFDProfile{}
+func BFDProfileWithDefaults(profile metallbv1.BFDProfile, multiHop bool) metallbv1.BFDProfile {
+	res := metallbv1.BFDProfile{}
 	res.Name = profile.Name
 	res.Spec.ReceiveInterval = valueWithDefault(profile.Spec.ReceiveInterval, 300)
 	res.Spec.TransmitInterval = valueWithDefault(profile.Spec.TransmitInterval, 300)

@@ -22,7 +22,7 @@ import (
 	"net/http"
 
 	"github.com/go-kit/log/level"
-	"go.universe.tf/metallb/api/v1beta1"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 	"go.universe.tf/metallb/internal/k8s/webhooks/webhookv1beta2"
 	v1 "k8s.io/api/admission/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -54,8 +54,8 @@ type BFDProfileValidator struct {
 
 // Handle handled incoming admission requests for BFDProfile objects.
 func (v *BFDProfileValidator) Handle(ctx context.Context, req admission.Request) admission.Response {
-	var bfdProfile v1beta1.BFDProfile
-	var oldBFDProfile v1beta1.BFDProfile
+	var bfdProfile metallbv1.BFDProfile
+	var oldBFDProfile metallbv1.BFDProfile
 	if req.Operation == v1.Delete {
 		if err := v.decoder.DecodeRaw(req.OldObject, &bfdProfile); err != nil {
 			return admission.Errored(http.StatusBadRequest, err)
@@ -92,7 +92,7 @@ func (v *BFDProfileValidator) Handle(ctx context.Context, req admission.Request)
 }
 
 // validateBFDCreate implements webhook.Validator so a webhook will be registered for BFDProfile.
-func validateBFDCreate(bfdProfile *v1beta1.BFDProfile) error {
+func validateBFDCreate(bfdProfile *metallbv1.BFDProfile) error {
 	level.Debug(Logger).Log("webhook", "bfdProfile", "action", "create", "name", bfdProfile.Name, "namespace", bfdProfile.Namespace)
 
 	if bfdProfile.Namespace != MetalLBNamespace {
@@ -103,12 +103,12 @@ func validateBFDCreate(bfdProfile *v1beta1.BFDProfile) error {
 }
 
 // validateBFDUpdate implements webhook.Validator so a webhook will be registered for BFDProfile.
-func validateBFDUpdate(bfdProfile *v1beta1.BFDProfile, _ *v1beta1.BFDProfile) error {
+func validateBFDUpdate(bfdProfile *metallbv1.BFDProfile, _ *metallbv1.BFDProfile) error {
 	return nil
 }
 
 // validateBFDDelete implements webhook.Validator so a webhook will be registered for BFDProfile.
-func validateBFDDelete(bfdProfile *v1beta1.BFDProfile) error {
+func validateBFDDelete(bfdProfile *metallbv1.BFDProfile) error {
 	level.Debug(Logger).Log("webhook", "bfdprofile", "action", "delete", "name", bfdProfile.Name, "namespace", bfdProfile.Namespace)
 
 	existingBGPPeers, err := webhookv1beta2.GetExistingBGPPeers()

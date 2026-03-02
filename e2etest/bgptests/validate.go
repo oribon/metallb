@@ -21,7 +21,7 @@ import (
 	"go.universe.tf/e2etest/pkg/metallb"
 	"go.universe.tf/e2etest/pkg/routes"
 	"go.universe.tf/e2etest/pkg/wget"
-	metallbv1beta1 "go.universe.tf/metallb/api/v1beta1"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientset "k8s.io/client-go/kubernetes"
@@ -169,7 +169,7 @@ func frrIsPairedOnPods(cs clientset.Interface, n *frrcontainer.FRR, ipFamily ipf
 	}, 4*time.Minute, 1*time.Second).ShouldNot(HaveOccurred())
 }
 
-func checkBFDConfigPropagated(nodeConfig metallbv1beta1.BFDProfile, peerConfig frr.BFDPeer) error {
+func checkBFDConfigPropagated(nodeConfig metallbv1.BFDProfile, peerConfig frr.BFDPeer) error {
 	if peerConfig.Status != "up" {
 		return fmt.Errorf("peer status not up")
 	}

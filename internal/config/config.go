@@ -28,8 +28,7 @@ import (
 
 	"github.com/mikioh/ipaddr"
 
-	metallbv1beta1 "go.universe.tf/metallb/api/v1beta1"
-	metallbv1beta2 "go.universe.tf/metallb/api/v1beta2"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 	"go.universe.tf/metallb/internal/bgp/community"
 	"go.universe.tf/metallb/internal/ipfamily"
 	corev1 "k8s.io/api/core/v1"
@@ -41,12 +40,12 @@ import (
 )
 
 type ClusterResources struct {
-	Pools           []metallbv1beta1.IPAddressPool    `json:"ipaddresspools"`
-	Peers           []metallbv1beta2.BGPPeer          `json:"bgppeers"`
-	BFDProfiles     []metallbv1beta1.BFDProfile       `json:"bfdprofiles"`
-	BGPAdvs         []metallbv1beta1.BGPAdvertisement `json:"bgpadvertisements"`
-	L2Advs          []metallbv1beta1.L2Advertisement  `json:"l2advertisements"`
-	Communities     []metallbv1beta1.Community        `json:"communities"`
+	Pools           []metallbv1.IPAddressPool    `json:"ipaddresspools"`
+	Peers           []metallbv1.BGPPeer          `json:"bgppeers"`
+	BFDProfiles     []metallbv1.BFDProfile       `json:"bfdprofiles"`
+	BGPAdvs         []metallbv1.BGPAdvertisement `json:"bgpadvertisements"`
+	L2Advs          []metallbv1.L2Advertisement  `json:"l2advertisements"`
+	Communities     []metallbv1.Community        `json:"communities"`
 	PasswordSecrets map[string]corev1.Secret          `json:"passwordsecrets"`
 	Nodes           []corev1.Node                     `json:"nodes"`
 	Namespaces      []corev1.Namespace                `json:"namespaces"`
@@ -366,7 +365,7 @@ func bgpExtrasFor(resources ClusterResources) string {
 	return resources.BGPExtras.Data[bgpExtrasField]
 }
 
-func communitiesFromCrs(cs []metallbv1beta1.Community) (map[string]community.BGPCommunity, error) {
+func communitiesFromCrs(cs []metallbv1.Community) (map[string]community.BGPCommunity, error) {
 	communities := map[string]community.BGPCommunity{}
 	for _, c := range cs {
 		for _, communityAlias := range c.Spec.Communities {
@@ -383,7 +382,7 @@ func communitiesFromCrs(cs []metallbv1beta1.Community) (map[string]community.BGP
 	return communities, nil
 }
 
-func peerFromCR(p metallbv1beta2.BGPPeer, passwordSecrets map[string]corev1.Secret) (*Peer, error) {
+func peerFromCR(p metallbv1.BGPPeer, passwordSecrets map[string]corev1.Secret) (*Peer, error) {
 	if p.Spec.MyASN == 0 {
 		return nil, errors.New("missing local ASN")
 	}
@@ -393,7 +392,7 @@ func peerFromCR(p metallbv1beta2.BGPPeer, passwordSecrets map[string]corev1.Secr
 	if p.Spec.ASN != 0 && p.Spec.DynamicASN != "" {
 		return nil, errors.New("both peer ASN and dynamicASN specified")
 	}
-	if p.Spec.DynamicASN != "" && p.Spec.DynamicASN != metallbv1beta2.InternalASNMode && p.Spec.DynamicASN != metallbv1beta2.ExternalASNMode {
+	if p.Spec.DynamicASN != "" && p.Spec.DynamicASN != metallbv1.InternalASNMode && p.Spec.DynamicASN != metallbv1.ExternalASNMode {
 		return nil, fmt.Errorf("invalid dynamicASN %s", p.Spec.DynamicASN)
 	}
 	if p.Spec.ASN == p.Spec.MyASN && p.Spec.EBGPMultiHop {
@@ -491,11 +490,10 @@ func peerFromCR(p metallbv1beta2.BGPPeer, passwordSecrets map[string]corev1.Secr
 		EBGPMultiHop:           p.Spec.EBGPMultiHop,
 		VRF:                    p.Spec.VRFName,
 		DualStackAddressFamily: p.Spec.DualStackAddressFamily,
-		DisableMP:              p.Spec.DisableMP,
 	}, nil
 }
 
-func passwordFromSecretForPeer(p metallbv1beta2.BGPPeer, passwordSecrets map[string]corev1.Secret) (string, error) {
+func passwordFromSecretForPeer(p metallbv1.BGPPeer, passwordSecrets map[string]corev1.Secret) (string, error) {
 	secret, ok := passwordSecrets[p.Spec.PasswordSecret.Name]
 	if !ok {
 		return "", TransientError{Message: fmt.Sprintf("secret ref not found for peer config %q/%q", p.Namespace, p.Name)}
@@ -514,7 +512,7 @@ func passwordFromSecretForPeer(p metallbv1beta2.BGPPeer, passwordSecrets map[str
 	return string(srcPass), nil
 }
 
-func addressPoolFromCR(p metallbv1beta1.IPAddressPool, namespaces []corev1.Namespace) (*Pool, error) {
+func addressPoolFromCR(p metallbv1.IPAddressPool, namespaces []corev1.Namespace) (*Pool, error) {
 	if p.Name == "" {
 		return nil, errors.New("missing pool name")
 	}
@@ -552,7 +550,7 @@ func addressPoolFromCR(p metallbv1beta1.IPAddressPool, namespaces []corev1.Names
 	return ret, nil
 }
 
-func addressPoolServiceAllocationsFromCR(p metallbv1beta1.IPAddressPool, namespaces []corev1.Namespace) (*ServiceAllocation, error) {
+func addressPoolServiceAllocationsFromCR(p metallbv1.IPAddressPool, namespaces []corev1.Namespace) (*ServiceAllocation, error) {
 	if p.Spec.AllocateTo == nil {
 		return nil, nil
 	}
@@ -627,7 +625,7 @@ func poolsByServiceSelector(pools map[string]*Pool) []string {
 	return poolsByServiceSelector
 }
 
-func bfdProfileFromCR(p metallbv1beta1.BFDProfile) (*BFDProfile, error) {
+func bfdProfileFromCR(p metallbv1.BFDProfile) (*BFDProfile, error) {
 	if p.Name == "" {
 		return nil, fmt.Errorf("missing bfd profile name")
 	}
@@ -664,7 +662,7 @@ func bfdProfileFromCR(p metallbv1beta1.BFDProfile) (*BFDProfile, error) {
 	return res, nil
 }
 
-func setL2AdvertisementsToPools(ipPools []metallbv1beta1.IPAddressPool, l2Advs []metallbv1beta1.L2Advertisement,
+func setL2AdvertisementsToPools(ipPools []metallbv1.IPAddressPool, l2Advs []metallbv1.L2Advertisement,
 	nodes []corev1.Node, ipPoolMap map[string]*Pool) error {
 	for _, l2Adv := range l2Advs {
 		adv, err := l2AdvertisementFromCR(l2Adv, nodes)
@@ -695,7 +693,7 @@ func setL2AdvertisementsToPools(ipPools []metallbv1beta1.IPAddressPool, l2Advs [
 	return nil
 }
 
-func setBGPAdvertisementsToPools(ipPools []metallbv1beta1.IPAddressPool, bgpAdvs []metallbv1beta1.BGPAdvertisement,
+func setBGPAdvertisementsToPools(ipPools []metallbv1.IPAddressPool, bgpAdvs []metallbv1.BGPAdvertisement,
 	nodes []corev1.Node, ipPoolMap map[string]*Pool, communities map[string]community.BGPCommunity) error {
 	for _, bgpAdv := range bgpAdvs {
 		adv, err := bgpAdvertisementFromCR(bgpAdv, communities, nodes)
@@ -730,7 +728,7 @@ func setBGPAdvertisementsToPools(ipPools []metallbv1beta1.IPAddressPool, bgpAdvs
 	return nil
 }
 
-func l2AdvertisementFromCR(crdAd metallbv1beta1.L2Advertisement, nodes []corev1.Node) (*L2Advertisement, error) {
+func l2AdvertisementFromCR(crdAd metallbv1.L2Advertisement, nodes []corev1.Node) (*L2Advertisement, error) {
 	err := validateDuplicate(crdAd.Spec.IPAddressPools, "ipAddressPools")
 	if err != nil {
 		return nil, err
@@ -766,7 +764,7 @@ func l2AdvertisementFromCR(crdAd metallbv1beta1.L2Advertisement, nodes []corev1.
 	return l2, nil
 }
 
-func bgpAdvertisementFromCR(crdAd metallbv1beta1.BGPAdvertisement, communities map[string]community.BGPCommunity, nodes []corev1.Node) (*BGPAdvertisement, error) {
+func bgpAdvertisementFromCR(crdAd metallbv1.BGPAdvertisement, communities map[string]community.BGPCommunity, nodes []corev1.Node) (*BGPAdvertisement, error) {
 	err := validateDuplicate(crdAd.Spec.IPAddressPools, "ipAddressPools")
 	if err != nil {
 		return nil, err
@@ -1085,7 +1083,7 @@ func bfdIntFromConfig(value *uint32, min, max uint32) (*uint32, error) {
 	return value, nil
 }
 
-func validateDuplicateBGPAdvertisements(ads []metallbv1beta1.BGPAdvertisement) error {
+func validateDuplicateBGPAdvertisements(ads []metallbv1.BGPAdvertisement) error {
 	for i := 0; i < len(ads); i++ {
 		for j := i + 1; j < len(ads); j++ {
 			if reflect.DeepEqual(ads[i], ads[j]) {
@@ -1160,7 +1158,7 @@ OUTER:
 	return res, nil
 }
 
-func selectedPools(pools []metallbv1beta1.IPAddressPool, selectors []metav1.LabelSelector) ([]string, error) {
+func selectedPools(pools []metallbv1.IPAddressPool, selectors []metav1.LabelSelector) ([]string, error) {
 	labelSelectors := []labels.Selector{}
 	for _, selector := range selectors {
 		l, err := metav1.LabelSelectorAsSelector(&selector)

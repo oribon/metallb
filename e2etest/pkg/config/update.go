@@ -6,8 +6,7 @@ import (
 	"context"
 
 	frrk8sv1beta1 "github.com/metallb/frr-k8s/api/v1beta1"
-	metallbv1beta1 "go.universe.tf/metallb/api/v1beta1"
-	metallbv1beta2 "go.universe.tf/metallb/api/v1beta2"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
@@ -16,12 +15,12 @@ import (
 )
 
 type Resources struct {
-	Pools           []metallbv1beta1.IPAddressPool    `json:"ipaddresspools"`
-	Peers           []metallbv1beta2.BGPPeer          `json:"bgppeers"`
-	BFDProfiles     []metallbv1beta1.BFDProfile       `json:"bfdprofiles"`
-	BGPAdvs         []metallbv1beta1.BGPAdvertisement `json:"bgpadvertisements"`
-	L2Advs          []metallbv1beta1.L2Advertisement  `json:"l2advertisements"`
-	Communities     []metallbv1beta1.Community        `json:"communities"`
+	Pools           []metallbv1.IPAddressPool    `json:"ipaddresspools"`
+	Peers           []metallbv1.BGPPeer          `json:"bgppeers"`
+	BFDProfiles     []metallbv1.BFDProfile       `json:"bfdprofiles"`
+	BGPAdvs         []metallbv1.BGPAdvertisement `json:"bgpadvertisements"`
+	L2Advs          []metallbv1.L2Advertisement  `json:"l2advertisements"`
+	Communities     []metallbv1.Community        `json:"communities"`
 	PasswordSecrets map[string]corev1.Secret          `json:"passwordsecrets"`
 	Nodes           []corev1.Node                     `json:"nodes"`
 	Namespaces      []corev1.Namespace                `json:"namespaces"`
@@ -43,11 +42,7 @@ type beta1Updater struct {
 func UpdaterForCRs(r *rest.Config, ns string) (Updater, error) {
 	myScheme := runtime.NewScheme()
 
-	if err := metallbv1beta1.AddToScheme(myScheme); err != nil {
-		return nil, err
-	}
-
-	if err := metallbv1beta2.AddToScheme(myScheme); err != nil {
+	if err := metallbv1.AddToScheme(myScheme); err != nil {
 		return nil, err
 	}
 
@@ -130,23 +125,23 @@ func (o beta1Updater) Update(r Resources) error {
 			// the mutate function is expected to change the object when updating.
 			// we always override with the old version, and we change only the spec part.
 			switch toChange := obj.(type) {
-			case *metallbv1beta1.IPAddressPool:
-				old := oldValues[i].(*metallbv1beta1.IPAddressPool)
+			case *metallbv1.IPAddressPool:
+				old := oldValues[i].(*metallbv1.IPAddressPool)
 				toChange.Spec = *old.Spec.DeepCopy()
-			case *metallbv1beta1.BFDProfile:
-				old := oldValues[i].(*metallbv1beta1.BFDProfile)
+			case *metallbv1.BFDProfile:
+				old := oldValues[i].(*metallbv1.BFDProfile)
 				toChange.Spec = *old.Spec.DeepCopy()
-			case *metallbv1beta2.BGPPeer:
-				old := oldValues[i].(*metallbv1beta2.BGPPeer)
+			case *metallbv1.BGPPeer:
+				old := oldValues[i].(*metallbv1.BGPPeer)
 				toChange.Spec = *old.Spec.DeepCopy()
-			case *metallbv1beta1.BGPAdvertisement:
-				old := oldValues[i].(*metallbv1beta1.BGPAdvertisement)
+			case *metallbv1.BGPAdvertisement:
+				old := oldValues[i].(*metallbv1.BGPAdvertisement)
 				toChange.Spec = *old.Spec.DeepCopy()
-			case *metallbv1beta1.L2Advertisement:
-				old := oldValues[i].(*metallbv1beta1.L2Advertisement)
+			case *metallbv1.L2Advertisement:
+				old := oldValues[i].(*metallbv1.L2Advertisement)
 				toChange.Spec = *old.Spec.DeepCopy()
-			case *metallbv1beta1.Community:
-				old := oldValues[i].(*metallbv1beta1.Community)
+			case *metallbv1.Community:
+				old := oldValues[i].(*metallbv1.Community)
 				toChange.Spec = *old.Spec.DeepCopy()
 			}
 
@@ -160,27 +155,27 @@ func (o beta1Updater) Update(r Resources) error {
 }
 
 func (o beta1Updater) Clean() error {
-	err := o.cli.DeleteAllOf(context.Background(), &metallbv1beta1.IPAddressPool{}, client.InNamespace(o.namespace))
+	err := o.cli.DeleteAllOf(context.Background(), &metallbv1.IPAddressPool{}, client.InNamespace(o.namespace))
 	if err != nil {
 		return err
 	}
-	err = o.cli.DeleteAllOf(context.Background(), &metallbv1beta2.BGPPeer{}, client.InNamespace(o.namespace))
+	err = o.cli.DeleteAllOf(context.Background(), &metallbv1.BGPPeer{}, client.InNamespace(o.namespace))
 	if err != nil {
 		return err
 	}
-	err = o.cli.DeleteAllOf(context.Background(), &metallbv1beta1.BFDProfile{}, client.InNamespace(o.namespace))
+	err = o.cli.DeleteAllOf(context.Background(), &metallbv1.BFDProfile{}, client.InNamespace(o.namespace))
 	if err != nil {
 		return err
 	}
-	err = o.cli.DeleteAllOf(context.Background(), &metallbv1beta1.BGPAdvertisement{}, client.InNamespace(o.namespace))
+	err = o.cli.DeleteAllOf(context.Background(), &metallbv1.BGPAdvertisement{}, client.InNamespace(o.namespace))
 	if err != nil {
 		return err
 	}
-	err = o.cli.DeleteAllOf(context.Background(), &metallbv1beta1.L2Advertisement{}, client.InNamespace(o.namespace))
+	err = o.cli.DeleteAllOf(context.Background(), &metallbv1.L2Advertisement{}, client.InNamespace(o.namespace))
 	if err != nil {
 		return err
 	}
-	err = o.cli.DeleteAllOf(context.Background(), &metallbv1beta1.Community{}, client.InNamespace(o.namespace))
+	err = o.cli.DeleteAllOf(context.Background(), &metallbv1.Community{}, client.InNamespace(o.namespace))
 	if err != nil {
 		return err
 	}

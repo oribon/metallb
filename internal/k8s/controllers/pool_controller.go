@@ -24,7 +24,7 @@ import (
 
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
-	metallbv1beta1 "go.universe.tf/metallb/api/v1beta1"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 	"go.universe.tf/metallb/internal/config"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -62,13 +62,13 @@ func (r *PoolReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 
 	updates.Inc()
 
-	var ipAddressPools metallbv1beta1.IPAddressPoolList
+	var ipAddressPools metallbv1.IPAddressPoolList
 	if err := r.List(ctx, &ipAddressPools, client.InNamespace(r.Namespace)); err != nil {
 		level.Error(r.Logger).Log("controller", "PoolReconciler", "message", "failed to get ipaddresspools", "error", err)
 		return ctrl.Result{}, err
 	}
 
-	var communities metallbv1beta1.CommunityList
+	var communities metallbv1.CommunityList
 	if err := r.List(ctx, &communities, client.InNamespace(r.Namespace)); err != nil {
 		level.Error(r.Logger).Log("controller", "PoolReconciler", "message", "failed to get communities", "error", err)
 		return ctrl.Result{}, err
@@ -136,20 +136,20 @@ func (r *PoolReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		},
 	}
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&metallbv1beta1.IPAddressPool{}).
-		Watches(&metallbv1beta1.Community{}, &handler.EnqueueRequestForObject{}).
+		For(&metallbv1.IPAddressPool{}).
+		Watches(&metallbv1.Community{}, &handler.EnqueueRequestForObject{}).
 		Watches(&corev1.Namespace{}, &handler.EnqueueRequestForObject{}).
 		WithEventFilter(p).
 		Complete(r)
 }
 
 func filterPoolStatusEvent(e event.UpdateEvent) bool {
-	_, ok := e.ObjectOld.(*metallbv1beta1.IPAddressPool)
+	_, ok := e.ObjectOld.(*metallbv1.IPAddressPool)
 	if !ok {
 		return true
 	}
 
-	_, ok = e.ObjectNew.(*metallbv1beta1.IPAddressPool)
+	_, ok = e.ObjectNew.(*metallbv1.IPAddressPool)
 	if !ok {
 		return true
 	}
@@ -182,16 +182,16 @@ func (r *PoolReconciler) reportCondition(ctx context.Context, conditionErr error
 		condition.Message = conditionErr.Error()
 	}
 
-	configStatus := &metallbv1beta1.ConfigurationState{
+	configStatus := &metallbv1.ConfigurationState{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "metallb.io/v1beta1",
+			APIVersion: "metallb.io/v1",
 			Kind:       "ConfigurationState",
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      r.ConfigStateName,
 			Namespace: r.Namespace,
 		},
-		Status: metallbv1beta1.ConfigurationStateStatus{
+		Status: metallbv1.ConfigurationStateStatus{
 			Conditions: []metav1.Condition{condition},
 		},
 	}

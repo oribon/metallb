@@ -9,7 +9,7 @@ import (
 
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
-	"go.universe.tf/metallb/api/v1beta1"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -64,7 +64,7 @@ func (r *ServiceBGPStatusReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	serviceName, serviceNamespace := req.Name, req.Namespace
 
-	var serviceBGPStatuses v1beta1.ServiceBGPStatusList
+	var serviceBGPStatuses metallbv1.ServiceBGPStatusList
 	err := r.List(ctx, &serviceBGPStatuses, client.MatchingFields{
 		serviceIndexName: indexFor(serviceNamespace, serviceName, r.NodeName),
 	})
@@ -104,7 +104,7 @@ func (r *ServiceBGPStatusReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, utilerrors.NewAggregate(deleteRedundantErrs)
 	}
 
-	var state = &v1beta1.ServiceBGPStatus{
+	var state = &metallbv1.ServiceBGPStatus{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "bgp-",
 			Namespace:    r.Namespace,
@@ -115,7 +115,7 @@ func (r *ServiceBGPStatusReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		state = &serviceBGPStatuses.Items[0]
 	}
 
-	desiredStatus := v1beta1.MetalLBServiceBGPStatus{
+	desiredStatus := metallbv1.MetalLBServiceBGPStatus{
 		Node:             r.NodeName,
 		ServiceName:      serviceName,
 		ServiceNamespace: serviceNamespace,
@@ -157,7 +157,7 @@ func (r *ServiceBGPStatusReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 func (r *ServiceBGPStatusReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	p := predicate.NewPredicateFuncs(func(o client.Object) bool {
-		_, ok := o.(*v1beta1.ServiceBGPStatus)
+		_, ok := o.(*metallbv1.ServiceBGPStatus)
 		if !ok {
 			return true
 		}
@@ -192,9 +192,9 @@ func (r *ServiceBGPStatusReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		return true
 	})
 
-	err := mgr.GetFieldIndexer().IndexField(context.Background(), &v1beta1.ServiceBGPStatus{}, serviceIndexName,
+	err := mgr.GetFieldIndexer().IndexField(context.Background(), &metallbv1.ServiceBGPStatus{}, serviceIndexName,
 		func(o client.Object) []string {
-			s, ok := o.(*v1beta1.ServiceBGPStatus)
+			s, ok := o.(*metallbv1.ServiceBGPStatus)
 			if s == nil {
 				level.Error(r.Logger).Log("controller", "fieldindexer", "error", "received nil ServiceBGPStatus")
 				return nil
@@ -220,7 +220,7 @@ func (r *ServiceBGPStatusReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("servicebgpstatus").
-		Watches(&v1beta1.ServiceBGPStatus{}, handler.EnqueueRequestsFromMapFunc(
+		Watches(&metallbv1.ServiceBGPStatus{}, handler.EnqueueRequestsFromMapFunc(
 			func(ctx context.Context, object client.Object) []reconcile.Request {
 				level.Debug(r.Logger).Log("controller", "ServiceBGPStatus", "enqueueing", "object", object)
 				labels := object.GetLabels()

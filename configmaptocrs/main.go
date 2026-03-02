@@ -15,8 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"go.universe.tf/metallb/api/v1beta1"
-	"go.universe.tf/metallb/api/v1beta2"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 	"go.universe.tf/metallb/internal/config"
 	"go.universe.tf/metallb/internal/version"
 
@@ -296,16 +295,16 @@ func resourcesFor(cf *configFile) (config.ClusterResources, error) {
 	return r, nil
 }
 
-func bfdProfileFor(c *configFile) []v1beta1.BFDProfile {
-	ret := make([]v1beta1.BFDProfile, len(c.BFDProfiles))
+func bfdProfileFor(c *configFile) []metallbv1.BFDProfile {
+	ret := make([]metallbv1.BFDProfile, len(c.BFDProfiles))
 
 	for i, bfd := range c.BFDProfiles {
-		b := v1beta1.BFDProfile{
+		b := metallbv1.BFDProfile{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      bfd.Name,
 				Namespace: resourcesNameSpace,
 			},
-			Spec: v1beta1.BFDProfileSpec{
+			Spec: metallbv1.BFDProfileSpec{
 				ReceiveInterval:  bfd.ReceiveInterval,
 				TransmitInterval: bfd.TransmitInterval,
 				DetectMultiplier: bfd.DetectMultiplier,
@@ -321,12 +320,12 @@ func bfdProfileFor(c *configFile) []v1beta1.BFDProfile {
 }
 
 // communitiesFor aggregates all the community aliases into one community resource.
-func communitiesFor(cf *configFile) []v1beta1.Community {
+func communitiesFor(cf *configFile) []metallbv1.Community {
 	if len(cf.BGPCommunities) == 0 {
 		return nil
 	}
 
-	communitiesAliases := make([]v1beta1.CommunityAlias, 0)
+	communitiesAliases := make([]metallbv1.CommunityAlias, 0)
 	// in order to make the rendering stable, we must have a sorted list of communities.
 	sortedCommunities := make([]string, 0, len(cf.BGPCommunities))
 
@@ -336,27 +335,27 @@ func communitiesFor(cf *configFile) []v1beta1.Community {
 	sort.Strings(sortedCommunities)
 
 	for _, v := range sortedCommunities {
-		communityAlias := v1beta1.CommunityAlias{
+		communityAlias := metallbv1.CommunityAlias{
 			Name:  v,
 			Value: cf.BGPCommunities[v],
 		}
 		communitiesAliases = append(communitiesAliases, communityAlias)
 	}
 
-	res := v1beta1.Community{
+	res := metallbv1.Community{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "communities",
 			Namespace: resourcesNameSpace,
 		},
-		Spec: v1beta1.CommunitySpec{
+		Spec: metallbv1.CommunitySpec{
 			Communities: communitiesAliases,
 		},
 	}
-	return []v1beta1.Community{res}
+	return []metallbv1.Community{res}
 }
 
-func peersFor(c *configFile) ([]v1beta2.BGPPeer, error) {
-	res := make([]v1beta2.BGPPeer, 0)
+func peersFor(c *configFile) ([]metallbv1.BGPPeer, error) {
+	res := make([]metallbv1.BGPPeer, 0)
 	for i, peer := range c.Peers {
 		p, err := parsePeer(peer)
 		if err != nil {
@@ -369,7 +368,7 @@ func peersFor(c *configFile) ([]v1beta2.BGPPeer, error) {
 	return res, nil
 }
 
-func parsePeer(p peer) (*v1beta2.BGPPeer, error) {
+func parsePeer(p peer) (*metallbv1.BGPPeer, error) {
 	holdTime, err := parseHoldTime(p.HoldTime)
 	if err != nil {
 		return nil, err
@@ -381,11 +380,11 @@ func parsePeer(p peer) (*v1beta2.BGPPeer, error) {
 		nodeSels = append(nodeSels, s)
 	}
 
-	res := &v1beta2.BGPPeer{
+	res := &metallbv1.BGPPeer{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: resourcesNameSpace,
 		},
-		Spec: v1beta2.BGPPeerSpec{
+		Spec: metallbv1.BGPPeerSpec{
 			MyASN:         p.MyASN,
 			ASN:           p.ASN,
 			Address:       p.Addr,
@@ -453,10 +452,10 @@ func parseKeepaliveTime(ka string) (time.Duration, error) {
 	return rounded, nil
 }
 
-func ipAddressPoolsFor(c *configFile) []v1beta1.IPAddressPool {
-	res := make([]v1beta1.IPAddressPool, len(c.Pools))
+func ipAddressPoolsFor(c *configFile) []metallbv1.IPAddressPool {
+	res := make([]metallbv1.IPAddressPool, len(c.Pools))
 	for i, addresspool := range c.Pools {
-		var ap v1beta1.IPAddressPool
+		var ap metallbv1.IPAddressPool
 		ap.Name = addresspool.Name
 		ap.Namespace = resourcesNameSpace
 		ap.Spec.Addresses = make([]string, len(addresspool.Addresses))
@@ -470,12 +469,12 @@ func ipAddressPoolsFor(c *configFile) []v1beta1.IPAddressPool {
 	return res
 }
 
-func bgpAdvertisementsFor(c *configFile) []v1beta1.BGPAdvertisement {
-	res := make([]v1beta1.BGPAdvertisement, 0)
+func bgpAdvertisementsFor(c *configFile) []metallbv1.BGPAdvertisement {
+	res := make([]metallbv1.BGPAdvertisement, 0)
 	index := 1
 	for _, ap := range c.Pools {
 		for _, bgpAdv := range ap.BGPAdvertisements {
-			var b v1beta1.BGPAdvertisement
+			var b metallbv1.BGPAdvertisement
 			b.Name = fmt.Sprintf("bgpadvertisement%d", index)
 			index++
 			b.Namespace = resourcesNameSpace
@@ -495,29 +494,29 @@ func bgpAdvertisementsFor(c *configFile) []v1beta1.BGPAdvertisement {
 	return res
 }
 
-func emptyBGPAdv(addressPoolName string, index int) v1beta1.BGPAdvertisement {
-	return v1beta1.BGPAdvertisement{
+func emptyBGPAdv(addressPoolName string, index int) metallbv1.BGPAdvertisement {
+	return metallbv1.BGPAdvertisement{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("bgpadvertisement%d", index),
 			Namespace: resourcesNameSpace,
 		},
-		Spec: v1beta1.BGPAdvertisementSpec{
+		Spec: metallbv1.BGPAdvertisementSpec{
 			IPAddressPools: []string{addressPoolName},
 		},
 	}
 }
 
-func l2AdvertisementsFor(c *configFile) []v1beta1.L2Advertisement {
-	res := make([]v1beta1.L2Advertisement, 0)
+func l2AdvertisementsFor(c *configFile) []metallbv1.L2Advertisement {
+	res := make([]metallbv1.L2Advertisement, 0)
 	index := 1
 	for _, addresspool := range c.Pools {
 		if addresspool.Protocol == Layer2 {
-			l2Adv := v1beta1.L2Advertisement{
+			l2Adv := metallbv1.L2Advertisement{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      fmt.Sprintf("l2advertisement%d", index),
 					Namespace: resourcesNameSpace,
 				},
-				Spec: v1beta1.L2AdvertisementSpec{
+				Spec: metallbv1.L2AdvertisementSpec{
 					IPAddressPools: []string{addresspool.Name},
 				},
 			}
@@ -590,11 +589,7 @@ func resourcesToObjects(resources config.ClusterResources) []runtime.Object {
 
 func initSchema() (*runtime.Scheme, error) {
 	s := runtime.NewScheme()
-	err := v1beta1.AddToScheme(s)
-	if err != nil {
-		return nil, err
-	}
-	err = v1beta2.AddToScheme(s)
+	err := metallbv1.AddToScheme(s)
 	if err != nil {
 		return nil, err
 	}

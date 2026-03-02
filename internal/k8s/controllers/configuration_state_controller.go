@@ -8,7 +8,7 @@ import (
 
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
-	metallbv1beta1 "go.universe.tf/metallb/api/v1beta1"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -37,10 +37,10 @@ func (r *ConfigurationStateReconciler) Reconcile(ctx context.Context, req ctrl.R
 	level.Info(r.Logger).Log("controller", r, "start reconcile", req.String())
 	defer level.Info(r.Logger).Log("controller", r, "end reconcile", req.String())
 
-	var configStatus metallbv1beta1.ConfigurationState
+	var configStatus metallbv1.ConfigurationState
 	err := r.Get(ctx, req.NamespacedName, &configStatus)
 	if apierrors.IsNotFound(err) {
-		configState := &metallbv1beta1.ConfigurationState{
+		configState := &metallbv1.ConfigurationState{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      r.ConfigStateName,
 				Namespace: r.Namespace,
@@ -60,15 +60,15 @@ func (r *ConfigurationStateReconciler) Reconcile(ctx context.Context, req ctrl.R
 		return ctrl.Result{}, err
 	}
 
-	result := metallbv1beta1.ConfigurationResultUnknown
+	result := metallbv1.ConfigurationResultUnknown
 	if len(configStatus.Status.Conditions) > 0 {
-		result = metallbv1beta1.ConfigurationResultValid
+		result = metallbv1.ConfigurationResultValid
 	}
 
 	var errorMessages []string
 	for _, cond := range configStatus.Status.Conditions {
 		if cond.Status == metav1.ConditionFalse && cond.Reason == ErrorTypeConfiguration {
-			result = metallbv1beta1.ConfigurationResultInvalid
+			result = metallbv1.ConfigurationResultInvalid
 			errorMessages = append(errorMessages, cond.Message)
 		}
 	}
@@ -112,7 +112,7 @@ func (r *ConfigurationStateReconciler) SetupWithManager(mgr ctrl.Manager) error 
 	reconcileChan := make(chan event.GenericEvent, 1)
 
 	go func() {
-		configStateRef := &metallbv1beta1.ConfigurationState{
+		configStateRef := &metallbv1.ConfigurationState{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      r.ConfigStateName,
 				Namespace: r.Namespace,
@@ -126,7 +126,7 @@ func (r *ConfigurationStateReconciler) SetupWithManager(mgr ctrl.Manager) error 
 
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("ConfigurationStateController").
-		For(&metallbv1beta1.ConfigurationState{}).
+		For(&metallbv1.ConfigurationState{}).
 		WatchesRawSource(source.Channel(reconcileChan, &handler.EnqueueRequestForObject{})).
 		WithEventFilter(p).
 		Complete(r)

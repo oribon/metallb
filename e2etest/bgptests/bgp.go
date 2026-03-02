@@ -41,8 +41,7 @@ import (
 	"go.universe.tf/e2etest/pkg/mac"
 	"go.universe.tf/e2etest/pkg/metallb"
 	"go.universe.tf/e2etest/pkg/status"
-	metallbv1beta1 "go.universe.tf/metallb/api/v1beta1"
-	metallbv1beta2 "go.universe.tf/metallb/api/v1beta2"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 
 	"go.universe.tf/e2etest/pkg/frr"
 	frrconfig "go.universe.tf/e2etest/pkg/frr/config"
@@ -80,15 +79,15 @@ var (
 
 var _ = ginkgo.Describe("BGP", func() {
 	var cs clientset.Interface
-	emptyBGPAdvertisement := metallbv1beta1.BGPAdvertisement{
+	emptyBGPAdvertisement := metallbv1.BGPAdvertisement{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "empty",
 		},
 	}
-	noAdvCommunity := metallbv1beta1.Community{
+	noAdvCommunity := metallbv1.Community{
 		ObjectMeta: metav1.ObjectMeta{Name: "community1"},
-		Spec: metallbv1beta1.CommunitySpec{
-			Communities: []metallbv1beta1.CommunityAlias{
+		Spec: metallbv1.CommunitySpec{
+			Communities: []metallbv1.CommunityAlias{
 				{
 					Name:  "NO_ADVERTISE",
 					Value: CommunityNoAdv,
@@ -352,18 +351,18 @@ var _ = ginkgo.Describe("BGP", func() {
 	ginkgo.DescribeTable("A load balancer service should work with overlapping IPs", func(pairingIPFamily ipfamily.Family, poolAddresses []string) {
 		var allNodes *corev1.NodeList
 		resources := config.Resources{
-			Pools: []metallbv1beta1.IPAddressPool{
+			Pools: []metallbv1.IPAddressPool{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "bgp-test",
 					},
-					Spec: metallbv1beta1.IPAddressPoolSpec{
+					Spec: metallbv1.IPAddressPoolSpec{
 						Addresses: poolAddresses,
 					},
 				},
 			},
 			Peers:   metallb.PeersForContainers(FRRContainers, pairingIPFamily),
-			BGPAdvs: []metallbv1beta1.BGPAdvertisement{emptyBGPAdvertisement},
+			BGPAdvs: []metallbv1.BGPAdvertisement{emptyBGPAdvertisement},
 		}
 
 		for _, c := range FRRContainers {
@@ -418,11 +417,11 @@ var _ = ginkgo.Describe("BGP", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		ginkgo.DescribeTable("set different AddressPools ranges modes", func(addressPools []metallbv1beta1.IPAddressPool, pairingFamily ipfamily.Family, tweak testservice.Tweak) {
+		ginkgo.DescribeTable("set different AddressPools ranges modes", func(addressPools []metallbv1.IPAddressPool, pairingFamily ipfamily.Family, tweak testservice.Tweak) {
 			resources := config.Resources{
 				Pools:   addressPools,
 				Peers:   metallb.PeersForContainers(FRRContainers, pairingFamily),
-				BGPAdvs: []metallbv1beta1.BGPAdvertisement{emptyBGPAdvertisement},
+				BGPAdvs: []metallbv1.BGPAdvertisement{emptyBGPAdvertisement},
 			}
 
 			for _, c := range FRRContainers {
@@ -454,50 +453,50 @@ var _ = ginkgo.Describe("BGP", func() {
 				validateService(svc, allNodes.Items, c)
 			}
 		},
-			ginkgo.Entry("IPV4 - test AddressPool defined by address range", []metallbv1beta1.IPAddressPool{
+			ginkgo.Entry("IPV4 - test AddressPool defined by address range", []metallbv1.IPAddressPool{
 				{
 					ObjectMeta: metav1.ObjectMeta{Name: "bgp-test"},
-					Spec: metallbv1beta1.IPAddressPoolSpec{
+					Spec: metallbv1.IPAddressPoolSpec{
 						Addresses: []string{
 							"192.168.10.0-192.168.10.18",
 						},
 					},
 				}}, ipfamily.IPv4, testservice.TrafficPolicyCluster,
 			),
-			ginkgo.Entry("IPV4 - test AddressPool defined by network prefix", []metallbv1beta1.IPAddressPool{
+			ginkgo.Entry("IPV4 - test AddressPool defined by network prefix", []metallbv1.IPAddressPool{
 				{
 					ObjectMeta: metav1.ObjectMeta{Name: "bgp-test"},
-					Spec: metallbv1beta1.IPAddressPoolSpec{
+					Spec: metallbv1.IPAddressPoolSpec{
 						Addresses: []string{
 							"192.168.10.0/24",
 						},
 					},
 				}}, ipfamily.IPv4, testservice.TrafficPolicyCluster,
 			),
-			ginkgo.Entry("IPV6 - test AddressPool defined by address range", []metallbv1beta1.IPAddressPool{
+			ginkgo.Entry("IPV6 - test AddressPool defined by address range", []metallbv1.IPAddressPool{
 				{
 					ObjectMeta: metav1.ObjectMeta{Name: "bgp-test"},
-					Spec: metallbv1beta1.IPAddressPoolSpec{
+					Spec: metallbv1.IPAddressPoolSpec{
 						Addresses: []string{
 							"fc00:f853:0ccd:e799::0-fc00:f853:0ccd:e799::18",
 						},
 					},
 				}}, ipfamily.IPv6, testservice.TrafficPolicyCluster,
 			),
-			ginkgo.Entry("IPV6 - test AddressPool defined by network prefix", []metallbv1beta1.IPAddressPool{
+			ginkgo.Entry("IPV6 - test AddressPool defined by network prefix", []metallbv1.IPAddressPool{
 				{
 					ObjectMeta: metav1.ObjectMeta{Name: "bgp-test"},
-					Spec: metallbv1beta1.IPAddressPoolSpec{
+					Spec: metallbv1.IPAddressPoolSpec{
 						Addresses: []string{
 							"fc00:f853:0ccd:e799::/124",
 						},
 					},
 				}}, ipfamily.IPv6, testservice.TrafficPolicyCluster,
 			),
-			ginkgo.Entry("DUALSTACK - test AddressPool defined by address range", []metallbv1beta1.IPAddressPool{
+			ginkgo.Entry("DUALSTACK - test AddressPool defined by address range", []metallbv1.IPAddressPool{
 				{
 					ObjectMeta: metav1.ObjectMeta{Name: "bgp-test"},
-					Spec: metallbv1beta1.IPAddressPoolSpec{
+					Spec: metallbv1.IPAddressPoolSpec{
 						Addresses: []string{
 							"192.168.10.0-192.168.10.18",
 							"fc00:f853:0ccd:e799::0-fc00:f853:0ccd:e799::18",
@@ -505,10 +504,10 @@ var _ = ginkgo.Describe("BGP", func() {
 					},
 				}}, ipfamily.DualStack, testservice.TrafficPolicyCluster,
 			),
-			ginkgo.Entry("DUALSTACK - test AddressPool defined by network prefix", []metallbv1beta1.IPAddressPool{
+			ginkgo.Entry("DUALSTACK - test AddressPool defined by network prefix", []metallbv1.IPAddressPool{
 				{
 					ObjectMeta: metav1.ObjectMeta{Name: "bgp-test"},
-					Spec: metallbv1beta1.IPAddressPoolSpec{
+					Spec: metallbv1.IPAddressPoolSpec{
 						Addresses: []string{
 							"192.168.10.0/24",
 							"fc00:f853:0ccd:e799::/124",
@@ -576,7 +575,7 @@ var _ = ginkgo.Describe("BGP", func() {
 		ginkgo.By("configure peer")
 
 		resources := config.Resources{
-			Peers: metallb.PeersForContainers(FRRContainers, ipFamily, func(p *metallbv1beta2.BGPPeer) {
+			Peers: metallb.PeersForContainers(FRRContainers, ipFamily, func(p *metallbv1.BGPPeer) {
 				p.Spec.PasswordSecret = corev1.SecretReference{Name: metallb.GetBGPPeerSecretName(p.Spec.ASN, p.Spec.Port, p.Spec.VRFName)}
 				p.Spec.Password = ""
 			}),
@@ -630,25 +629,25 @@ var _ = ginkgo.Describe("BGP", func() {
 			peersNames.Insert(p.Name)
 		}
 
-		bgpAdv := metallbv1beta1.BGPAdvertisement{
+		bgpAdv := metallbv1.BGPAdvertisement{
 			ObjectMeta: metav1.ObjectMeta{Name: "empty", Namespace: ConfigUpdater.Namespace()},
-			Spec:       metallbv1beta1.BGPAdvertisementSpec{},
+			Spec:       metallbv1.BGPAdvertisementSpec{},
 		}
 
 		ginkgo.By("Creating the service advertised to all peers")
 		resources := config.Resources{
-			Pools: []metallbv1beta1.IPAddressPool{
+			Pools: []metallbv1.IPAddressPool{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "bgp-test",
 					},
-					Spec: metallbv1beta1.IPAddressPoolSpec{
+					Spec: metallbv1.IPAddressPoolSpec{
 						Addresses: poolAddresses,
 					},
 				},
 			},
 			Peers:   peers,
-			BGPAdvs: []metallbv1beta1.BGPAdvertisement{bgpAdv},
+			BGPAdvs: []metallbv1.BGPAdvertisement{bgpAdv},
 		}
 
 		err := ConfigUpdater.Update(resources)
@@ -740,21 +739,21 @@ var _ = ginkgo.Describe("BGP", func() {
 		ginkgo.Entry("DUALSTACK", ipfamily.DualStack, []string{v4PoolAddresses, v6PoolAddresses}, testservice.DualStack))
 
 	ginkgo.Context("BFD", func() {
-		ginkgo.DescribeTable("should work with the given bfd profile", func(bfd metallbv1beta1.BFDProfile, pairingFamily ipfamily.Family, poolAddresses []string, tweak testservice.Tweak) {
+		ginkgo.DescribeTable("should work with the given bfd profile", func(bfd metallbv1.BFDProfile, pairingFamily ipfamily.Family, poolAddresses []string, tweak testservice.Tweak) {
 			resources := config.Resources{
-				Pools: []metallbv1beta1.IPAddressPool{
+				Pools: []metallbv1.IPAddressPool{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "bfd-test",
 						},
-						Spec: metallbv1beta1.IPAddressPoolSpec{
+						Spec: metallbv1.IPAddressPoolSpec{
 							Addresses: poolAddresses,
 						},
 					},
 				},
 				Peers:       metallb.WithBFD(metallb.PeersForContainers(FRRContainers, pairingFamily), bfd.Name),
-				BGPAdvs:     []metallbv1beta1.BGPAdvertisement{emptyBGPAdvertisement},
-				BFDProfiles: []metallbv1beta1.BFDProfile{bfd},
+				BGPAdvs:     []metallbv1.BGPAdvertisement{emptyBGPAdvertisement},
+				BFDProfiles: []metallbv1.BFDProfile{bfd},
 			}
 			err := ConfigUpdater.Update(resources)
 			Expect(err).NotTo(HaveOccurred())
@@ -831,17 +830,17 @@ var _ = ginkgo.Describe("BGP", func() {
 			}, 10*time.Second, 1*time.Second).ShouldNot(HaveOccurred())
 		},
 			ginkgo.Entry("IPV4 - default",
-				metallbv1beta1.BFDProfile{
+				metallbv1.BFDProfile{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "bar",
 					},
 				}, ipfamily.IPv4, []string{v4PoolAddresses}, testservice.TrafficPolicyCluster),
 			ginkgo.Entry("IPV4 - full params",
-				metallbv1beta1.BFDProfile{
+				metallbv1.BFDProfile{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "full1",
 					},
-					Spec: metallbv1beta1.BFDProfileSpec{
+					Spec: metallbv1.BFDProfileSpec{
 						ReceiveInterval:  ptr.To(uint32(60)),
 						TransmitInterval: ptr.To(uint32(61)),
 						EchoInterval:     ptr.To(uint32(62)),
@@ -851,11 +850,11 @@ var _ = ginkgo.Describe("BGP", func() {
 					},
 				}, ipfamily.IPv4, []string{v4PoolAddresses}, testservice.TrafficPolicyCluster),
 			ginkgo.Entry("IPV4 - echo mode enabled",
-				metallbv1beta1.BFDProfile{
+				metallbv1.BFDProfile{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "echo",
 					},
-					Spec: metallbv1beta1.BFDProfileSpec{
+					Spec: metallbv1.BFDProfileSpec{
 						ReceiveInterval:  ptr.To(uint32(80)),
 						TransmitInterval: ptr.To(uint32(81)),
 						EchoInterval:     ptr.To(uint32(82)),
@@ -865,17 +864,17 @@ var _ = ginkgo.Describe("BGP", func() {
 					},
 				}, ipfamily.IPv4, []string{v4PoolAddresses}, testservice.TrafficPolicyCluster),
 			ginkgo.Entry("IPV6 - default",
-				metallbv1beta1.BFDProfile{
+				metallbv1.BFDProfile{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "bar",
 					},
 				}, ipfamily.IPv6, []string{v6PoolAddresses}, testservice.TrafficPolicyCluster),
 			ginkgo.Entry("IPV6 - full params",
-				metallbv1beta1.BFDProfile{
+				metallbv1.BFDProfile{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "full1",
 					},
-					Spec: metallbv1beta1.BFDProfileSpec{
+					Spec: metallbv1.BFDProfileSpec{
 						ReceiveInterval:  ptr.To(uint32(60)),
 						TransmitInterval: ptr.To(uint32(61)),
 						EchoInterval:     ptr.To(uint32(62)),
@@ -885,11 +884,11 @@ var _ = ginkgo.Describe("BGP", func() {
 					},
 				}, ipfamily.IPv6, []string{v6PoolAddresses}, testservice.TrafficPolicyCluster),
 			ginkgo.Entry("DUALSTACK - full params",
-				metallbv1beta1.BFDProfile{
+				metallbv1.BFDProfile{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "full1",
 					},
-					Spec: metallbv1beta1.BFDProfileSpec{
+					Spec: metallbv1.BFDProfileSpec{
 						ReceiveInterval:  ptr.To(uint32(60)),
 						TransmitInterval: ptr.To(uint32(61)),
 						EchoInterval:     ptr.To(uint32(62)),
@@ -908,7 +907,7 @@ var _ = ginkgo.Describe("BGP", func() {
 		ginkgo.DescribeTable("should work after subsequent configuration updates", func(addressRange string, ipFamily ipfamily.Family) {
 			var services []*corev1.Service
 			var servicesIngressIP []string
-			var pools []metallbv1beta1.IPAddressPool
+			var pools []metallbv1.IPAddressPool
 
 			allNodes, err := cs.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
 			Expect(err).NotTo(HaveOccurred())
@@ -920,11 +919,11 @@ var _ = ginkgo.Describe("BGP", func() {
 				lastIP, err := config.GetIPFromRangeByIndex(addressRange, i*10+10)
 				Expect(err).NotTo(HaveOccurred())
 				addressesRange := fmt.Sprintf("%s-%s", firstIP, lastIP)
-				pool := metallbv1beta1.IPAddressPool{
+				pool := metallbv1.IPAddressPool{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: fmt.Sprintf("test-addresspool%d", i+1),
 					},
-					Spec: metallbv1beta1.IPAddressPoolSpec{
+					Spec: metallbv1.IPAddressPoolSpec{
 						Addresses: []string{addressesRange},
 					},
 				}
@@ -933,7 +932,7 @@ var _ = ginkgo.Describe("BGP", func() {
 				resources := config.Resources{
 					Pools:   pools,
 					Peers:   metallb.PeersForContainers(FRRContainers, ipFamily),
-					BGPAdvs: []metallbv1beta1.BGPAdvertisement{emptyBGPAdvertisement},
+					BGPAdvs: []metallbv1.BGPAdvertisement{emptyBGPAdvertisement},
 				}
 
 				for _, c := range FRRContainers {
@@ -957,7 +956,7 @@ var _ = ginkgo.Describe("BGP", func() {
 				ginkgo.By("validate LoadBalancer IP is in the AddressPool range")
 				ingressIP := jigservice.GetIngressPoint(
 					&svc.Status.LoadBalancer.Ingress[0])
-				err = config.ValidateIPInRange([]metallbv1beta1.IPAddressPool{pool}, ingressIP)
+				err = config.ValidateIPInRange([]metallbv1.IPAddressPool{pool}, ingressIP)
 				Expect(err).NotTo(HaveOccurred())
 
 				services = append(services, svc)
@@ -984,7 +983,7 @@ var _ = ginkgo.Describe("BGP", func() {
 
 				resources := config.Resources{
 					Peers:   metallb.PeersForContainers([]*frrcontainer.FRR{c}, ipFamily),
-					BGPAdvs: []metallbv1beta1.BGPAdvertisement{emptyBGPAdvertisement},
+					BGPAdvs: []metallbv1.BGPAdvertisement{emptyBGPAdvertisement},
 				}
 				err := ConfigUpdater.Update(resources)
 				Expect(err).NotTo(HaveOccurred())
@@ -999,31 +998,31 @@ var _ = ginkgo.Describe("BGP", func() {
 			ginkgo.Entry("IPV6", ipfamily.IPv6))
 
 		ginkgo.DescribeTable("configure bgp advertisement and verify it gets propagated",
-			func(rangeWithAdvertisement string, rangeWithoutAdvertisement string, advertisement metallbv1beta1.BGPAdvertisement,
-				ipFamily ipfamily.Family, communities []metallbv1beta1.Community) {
-				emptyAdvertisement := metallbv1beta1.BGPAdvertisement{
+			func(rangeWithAdvertisement string, rangeWithoutAdvertisement string, advertisement metallbv1.BGPAdvertisement,
+				ipFamily ipfamily.Family, communities []metallbv1.Community) {
+				emptyAdvertisement := metallbv1.BGPAdvertisement{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "empty",
 					},
-					Spec: metallbv1beta1.BGPAdvertisementSpec{
+					Spec: metallbv1.BGPAdvertisementSpec{
 						IPAddressPools: []string{"bgp-with-no-advertisement"},
 					},
 				}
 
-				poolWithAdvertisement := metallbv1beta1.IPAddressPool{
+				poolWithAdvertisement := metallbv1.IPAddressPool{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:   "bgp-with-advertisement",
 						Labels: map[string]string{"test": "bgp-with-advertisement"},
 					},
-					Spec: metallbv1beta1.IPAddressPoolSpec{
+					Spec: metallbv1.IPAddressPoolSpec{
 						Addresses: []string{rangeWithAdvertisement},
 					},
 				}
-				poolWithoutAdvertisement := metallbv1beta1.IPAddressPool{
+				poolWithoutAdvertisement := metallbv1.IPAddressPool{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "bgp-with-no-advertisement",
 					},
-					Spec: metallbv1beta1.IPAddressPoolSpec{
+					Spec: metallbv1.IPAddressPoolSpec{
 						Addresses: []string{rangeWithoutAdvertisement},
 					},
 				}
@@ -1033,8 +1032,8 @@ var _ = ginkgo.Describe("BGP", func() {
 					Communities: communities,
 				}
 
-				resources.Pools = []metallbv1beta1.IPAddressPool{poolWithAdvertisement, poolWithoutAdvertisement}
-				resources.BGPAdvs = []metallbv1beta1.BGPAdvertisement{emptyAdvertisement, advertisement}
+				resources.Pools = []metallbv1.IPAddressPool{poolWithAdvertisement, poolWithoutAdvertisement}
+				resources.BGPAdvs = []metallbv1.BGPAdvertisement{emptyAdvertisement, advertisement}
 
 				for _, c := range FRRContainers {
 					err := frrcontainer.PairWithNodes(cs, c, ipFamily)
@@ -1135,72 +1134,72 @@ var _ = ginkgo.Describe("BGP", func() {
 			ginkgo.Entry("IPV4 - community and localpref",
 				"192.168.10.0/24",
 				"192.168.16.0/24",
-				metallbv1beta1.BGPAdvertisement{
+				metallbv1.BGPAdvertisement{
 					ObjectMeta: metav1.ObjectMeta{Name: "advertisement"},
-					Spec: metallbv1beta1.BGPAdvertisementSpec{
+					Spec: metallbv1.BGPAdvertisementSpec{
 						Communities:    []string{CommunityNoAdv},
 						LocalPref:      50,
 						IPAddressPools: []string{"bgp-with-advertisement"},
 					},
 				},
 				ipfamily.IPv4,
-				[]metallbv1beta1.Community{}),
+				[]metallbv1.Community{}),
 			ginkgo.Entry("FRR - IPV4 - large community and localpref",
 				"192.168.10.0/24",
 				"192.168.16.0/24",
-				metallbv1beta1.BGPAdvertisement{
+				metallbv1.BGPAdvertisement{
 					ObjectMeta: metav1.ObjectMeta{Name: "advertisement"},
-					Spec: metallbv1beta1.BGPAdvertisementSpec{
+					Spec: metallbv1.BGPAdvertisementSpec{
 						Communities:    []string{"large:123:456:7890"},
 						LocalPref:      50,
 						IPAddressPools: []string{"bgp-with-advertisement"},
 					},
 				},
 				ipfamily.IPv4,
-				[]metallbv1beta1.Community{}),
+				[]metallbv1.Community{}),
 			ginkgo.Entry("IPV4 - localpref",
 				"192.168.10.0/24",
 				"192.168.16.0/24",
-				metallbv1beta1.BGPAdvertisement{
+				metallbv1.BGPAdvertisement{
 					ObjectMeta: metav1.ObjectMeta{Name: "advertisement"},
-					Spec: metallbv1beta1.BGPAdvertisementSpec{
+					Spec: metallbv1.BGPAdvertisementSpec{
 						LocalPref:      50,
 						IPAddressPools: []string{"bgp-with-advertisement"},
 					},
 				},
 				ipfamily.IPv4,
-				[]metallbv1beta1.Community{}),
+				[]metallbv1.Community{}),
 			ginkgo.Entry("IPV4 - community",
 				"192.168.10.0/24",
 				"192.168.16.0/24",
-				metallbv1beta1.BGPAdvertisement{
+				metallbv1.BGPAdvertisement{
 					ObjectMeta: metav1.ObjectMeta{Name: "advertisement"},
-					Spec: metallbv1beta1.BGPAdvertisementSpec{
+					Spec: metallbv1.BGPAdvertisementSpec{
 						Communities:    []string{CommunityNoAdv},
 						IPAddressPools: []string{"bgp-with-advertisement"},
 					},
 				},
 				ipfamily.IPv4,
-				[]metallbv1beta1.Community{}),
+				[]metallbv1.Community{}),
 			ginkgo.Entry("IPV4 - community from CRD",
 				"192.168.10.0/24",
 				"192.168.16.0/24",
-				metallbv1beta1.BGPAdvertisement{
+				metallbv1.BGPAdvertisement{
 					ObjectMeta: metav1.ObjectMeta{Name: "advertisement"},
-					Spec: metallbv1beta1.BGPAdvertisementSpec{
+					Spec: metallbv1.BGPAdvertisementSpec{
 						Communities:    []string{"NO_ADVERTISE"},
 						LocalPref:      50,
 						IPAddressPools: []string{"bgp-with-advertisement"},
 					},
 				},
 				ipfamily.IPv4,
-				[]metallbv1beta1.Community{noAdvCommunity}),
+				[]metallbv1.Community{noAdvCommunity}),
 			ginkgo.Entry("IPV4 - ip pool selector",
 				"192.168.10.0/24",
 				"192.168.16.0/24",
-				metallbv1beta1.BGPAdvertisement{
+				metallbv1.BGPAdvertisement{
 					ObjectMeta: metav1.ObjectMeta{Name: "advertisement"},
-					Spec: metallbv1beta1.BGPAdvertisementSpec{
+					Spec: metallbv1.BGPAdvertisementSpec{
 						Communities: []string{CommunityNoAdv},
 						LocalPref:   50,
 						IPAddressPoolSelectors: []metav1.LabelSelector{
@@ -1213,80 +1212,80 @@ var _ = ginkgo.Describe("BGP", func() {
 					},
 				},
 				ipfamily.IPv4,
-				[]metallbv1beta1.Community{}),
+				[]metallbv1.Community{}),
 			ginkgo.Entry("IPV6 - community and localpref",
 				"fc00:f853:0ccd:e799::0-fc00:f853:0ccd:e799::18",
 				"fc00:f853:0ccd:e799::19-fc00:f853:0ccd:e799::26",
-				metallbv1beta1.BGPAdvertisement{
+				metallbv1.BGPAdvertisement{
 					ObjectMeta: metav1.ObjectMeta{Name: "advertisement"},
-					Spec: metallbv1beta1.BGPAdvertisementSpec{
+					Spec: metallbv1.BGPAdvertisementSpec{
 						LocalPref:      50,
 						Communities:    []string{CommunityNoAdv},
 						IPAddressPools: []string{"bgp-with-advertisement"},
 					},
 				},
 				ipfamily.IPv6,
-				[]metallbv1beta1.Community{}),
+				[]metallbv1.Community{}),
 			ginkgo.Entry("IPV6 - community",
 				"fc00:f853:0ccd:e799::0-fc00:f853:0ccd:e799::18",
 				"fc00:f853:0ccd:e799::19-fc00:f853:0ccd:e799::26",
-				metallbv1beta1.BGPAdvertisement{
+				metallbv1.BGPAdvertisement{
 					ObjectMeta: metav1.ObjectMeta{Name: "advertisement"},
-					Spec: metallbv1beta1.BGPAdvertisementSpec{
+					Spec: metallbv1.BGPAdvertisementSpec{
 						Communities:    []string{CommunityNoAdv},
 						IPAddressPools: []string{"bgp-with-advertisement"},
 					},
 				},
 				ipfamily.IPv6,
-				[]metallbv1beta1.Community{}),
+				[]metallbv1.Community{}),
 			ginkgo.Entry("IPV6 - community from CRD",
 				"fc00:f853:0ccd:e799::0-fc00:f853:0ccd:e799::18",
 				"fc00:f853:0ccd:e799::19-fc00:f853:0ccd:e799::26",
-				metallbv1beta1.BGPAdvertisement{
+				metallbv1.BGPAdvertisement{
 					ObjectMeta: metav1.ObjectMeta{Name: "advertisement"},
-					Spec: metallbv1beta1.BGPAdvertisementSpec{
+					Spec: metallbv1.BGPAdvertisementSpec{
 						Communities:    []string{"NO_ADVERTISE"},
 						IPAddressPools: []string{"bgp-with-advertisement"},
 					},
 				},
 				ipfamily.IPv6,
-				[]metallbv1beta1.Community{noAdvCommunity}),
+				[]metallbv1.Community{noAdvCommunity}),
 			ginkgo.Entry("IPV6 - localpref",
 				"fc00:f853:0ccd:e799::0-fc00:f853:0ccd:e799::18",
 				"fc00:f853:0ccd:e799::19-fc00:f853:0ccd:e799::26",
-				metallbv1beta1.BGPAdvertisement{
+				metallbv1.BGPAdvertisement{
 					ObjectMeta: metav1.ObjectMeta{Name: "advertisement"},
-					Spec: metallbv1beta1.BGPAdvertisementSpec{
+					Spec: metallbv1.BGPAdvertisementSpec{
 						LocalPref:      50,
 						IPAddressPools: []string{"bgp-with-advertisement"},
 					},
 				},
 				ipfamily.IPv6,
-				[]metallbv1beta1.Community{}),
+				[]metallbv1.Community{}),
 			ginkgo.Entry("FRR - IPV6 - large community and localpref",
 				"fc00:f853:0ccd:e799::0-fc00:f853:0ccd:e799::18",
 				"fc00:f853:0ccd:e799::19-fc00:f853:0ccd:e799::26",
-				metallbv1beta1.BGPAdvertisement{
+				metallbv1.BGPAdvertisement{
 					ObjectMeta: metav1.ObjectMeta{Name: "advertisement"},
-					Spec: metallbv1beta1.BGPAdvertisementSpec{
+					Spec: metallbv1.BGPAdvertisementSpec{
 						Communities:    []string{"large:123:456:7890"},
 						LocalPref:      50,
 						IPAddressPools: []string{"bgp-with-advertisement"},
 					},
 				},
 				ipfamily.IPv6,
-				[]metallbv1beta1.Community{}))
+				[]metallbv1.Community{}))
 	})
 
 	ginkgo.Context("MetalLB FRR rejects", func() {
 		ginkgo.DescribeTable("any routes advertised by any neighbor", func(addressesRange, toInject string, pairingIPFamily ipfamily.Family) {
 			resources := config.Resources{
-				Pools: []metallbv1beta1.IPAddressPool{
+				Pools: []metallbv1.IPAddressPool{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "rejectroutes",
 						},
-						Spec: metallbv1beta1.IPAddressPoolSpec{
+						Spec: metallbv1.IPAddressPoolSpec{
 							Addresses: []string{
 								addressesRange,
 							},
@@ -1294,7 +1293,7 @@ var _ = ginkgo.Describe("BGP", func() {
 					},
 				},
 				Peers:   metallb.PeersForContainers(FRRContainers, pairingIPFamily),
-				BGPAdvs: []metallbv1beta1.BGPAdvertisement{emptyBGPAdvertisement},
+				BGPAdvs: []metallbv1.BGPAdvertisement{emptyBGPAdvertisement},
 			}
 
 			for _, c := range FRRContainers {
@@ -1540,12 +1539,12 @@ var _ = ginkgo.Describe("BGP", func() {
 	ginkgo.Context("FRR-MODE FRR validate reload feedback", func() {
 		ginkgo.It("should update MetalLB config and log reload-validate success", func() {
 			resources := config.Resources{
-				Pools: []metallbv1beta1.IPAddressPool{
+				Pools: []metallbv1.IPAddressPool{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "new-config",
 						},
-						Spec: metallbv1beta1.IPAddressPoolSpec{
+						Spec: metallbv1.IPAddressPoolSpec{
 							Addresses: []string{
 								v4PoolAddresses,
 							},
@@ -1553,7 +1552,7 @@ var _ = ginkgo.Describe("BGP", func() {
 					},
 				},
 				Peers:   metallb.PeersForContainers(FRRContainers, ipfamily.IPv4),
-				BGPAdvs: []metallbv1beta1.BGPAdvertisement{emptyBGPAdvertisement},
+				BGPAdvs: []metallbv1.BGPAdvertisement{emptyBGPAdvertisement},
 			}
 
 			beforeUpdateTime := metav1.Now()
@@ -1583,22 +1582,22 @@ var _ = ginkgo.Describe("BGP", func() {
 	ginkgo.Context("validate FRR running configuration", func() {
 		ginkgo.It("Full BFD profile", func() {
 			resources := config.Resources{
-				Pools: []metallbv1beta1.IPAddressPool{
+				Pools: []metallbv1.IPAddressPool{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "bgp-test",
 						},
-						Spec: metallbv1beta1.IPAddressPoolSpec{
+						Spec: metallbv1.IPAddressPoolSpec{
 							Addresses: []string{v4PoolAddresses},
 						},
 					},
 				},
 				Peers:   metallb.WithBFD(metallb.PeersForContainers(FRRContainers, ipfamily.IPv4), "fullbfdprofile1"),
-				BGPAdvs: []metallbv1beta1.BGPAdvertisement{emptyBGPAdvertisement},
-				BFDProfiles: []metallbv1beta1.BFDProfile{
+				BGPAdvs: []metallbv1.BGPAdvertisement{emptyBGPAdvertisement},
+				BFDProfiles: []metallbv1.BFDProfile{
 					{
 						ObjectMeta: metav1.ObjectMeta{Name: "fullbfdprofile1"},
-						Spec: metallbv1beta1.BFDProfileSpec{
+						Spec: metallbv1.BFDProfileSpec{
 							ReceiveInterval:  ptr.To(uint32(93)),
 							TransmitInterval: ptr.To(uint32(95)),
 							EchoInterval:     ptr.To(uint32(97)),
@@ -1610,11 +1609,11 @@ var _ = ginkgo.Describe("BGP", func() {
 				},
 			}
 
-			resources.Peers = append(resources.Peers, metallbv1beta2.BGPPeer{
+			resources.Peers = append(resources.Peers, metallbv1.BGPPeer{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "defaultport",
 				},
-				Spec: metallbv1beta2.BGPPeerSpec{
+				Spec: metallbv1.BGPPeerSpec{
 					ASN:     metalLBASN,
 					MyASN:   metalLBASN,
 					Address: "192.168.1.1",
@@ -1661,7 +1660,7 @@ var _ = ginkgo.Describe("BGP", func() {
 			}
 
 			ginkgo.By("Checking the default value on the bgppeer crds is set")
-			peer := metallbv1beta2.BGPPeer{}
+			peer := metallbv1.BGPPeer{}
 			err = ConfigUpdater.Client().Get(context.Background(), types.NamespacedName{Name: "defaultport", Namespace: metallb.Namespace}, &peer)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(peer.Spec.Port).To(Equal(uint16(179)))
@@ -1669,7 +1668,7 @@ var _ = ginkgo.Describe("BGP", func() {
 		ginkgo.It("BGP Peer parameters", func() {
 			connectTime := time.Second * 5
 			resources := config.Resources{
-				Peers: metallb.PeersForContainers(FRRContainers, ipfamily.IPv4, func(p *metallbv1beta2.BGPPeer) {
+				Peers: metallb.PeersForContainers(FRRContainers, ipfamily.IPv4, func(p *metallbv1.BGPPeer) {
 					p.Spec.ConnectTime = ptr.To(metav1.Duration{Duration: connectTime})
 				}),
 			}
@@ -1737,7 +1736,7 @@ var _ = ginkgo.Describe("BGP", func() {
 		Consistently(checkServiceL2, 3*time.Second, 1*time.Second).Should(HaveOccurred())
 
 		ginkgo.By("Creating the l2 advertisement")
-		l2Advertisement := metallbv1beta1.L2Advertisement{
+		l2Advertisement := metallbv1.L2Advertisement{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "l2adv",
 				Namespace: metallb.Namespace,
@@ -1771,10 +1770,10 @@ var _ = ginkgo.Describe("BGP", func() {
 	)
 	ginkgo.DescribeTable("FRR establishes connections with dynamic ASN ", func(pairingIPFamily ipfamily.Family) {
 		resources := config.Resources{
-			Peers: metallb.PeersForContainers(FRRContainers, pairingIPFamily, func(p *metallbv1beta2.BGPPeer) {
-				dynamicASN := metallbv1beta2.InternalASNMode
+			Peers: metallb.PeersForContainers(FRRContainers, pairingIPFamily, func(p *metallbv1.BGPPeer) {
+				dynamicASN := metallbv1.InternalASNMode
 				if p.Spec.ASN != p.Spec.MyASN {
-					dynamicASN = metallbv1beta2.ExternalASNMode
+					dynamicASN = metallbv1.ExternalASNMode
 				}
 				p.Spec.ASN = 0
 				p.Spec.DynamicASN = dynamicASN
@@ -1808,7 +1807,7 @@ func substringCount(substr string) interface{} {
 
 // communityForAlias checks if the given community name exists in the community crs,
 // and if so, returns the value of the matching community.
-func communityForAlias(communityName string, cs []metallbv1beta1.Community) (string, error) {
+func communityForAlias(communityName string, cs []metallbv1.Community) (string, error) {
 	for _, c := range cs {
 		for _, communityAlias := range c.Spec.Communities {
 			if communityName == communityAlias.Name {

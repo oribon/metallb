@@ -7,13 +7,13 @@ import (
 
 	"github.com/go-kit/log"
 	"github.com/google/go-cmp/cmp"
-	"go.universe.tf/metallb/api/v1beta1"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestValidateIPAddressPool(t *testing.T) {
 	MetalLBNamespace = MetalLBTestNameSpace
-	ipAddressPool := v1beta1.IPAddressPool{
+	ipAddressPool := metallbv1.IPAddressPool{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-ippool",
 			Namespace: MetalLBTestNameSpace,
@@ -22,9 +22,9 @@ func TestValidateIPAddressPool(t *testing.T) {
 	Logger = log.NewNopLogger()
 
 	toRestoreIPAddressPools := getExistingIPAddressPools
-	getExistingIPAddressPools = func() (*v1beta1.IPAddressPoolList, error) {
-		return &v1beta1.IPAddressPoolList{
-			Items: []v1beta1.IPAddressPool{
+	getExistingIPAddressPools = func() (*metallbv1.IPAddressPoolList, error) {
+		return &metallbv1.IPAddressPoolList{
+			Items: []metallbv1.IPAddressPool{
 				ipAddressPool,
 			},
 		}, nil
@@ -36,22 +36,22 @@ func TestValidateIPAddressPool(t *testing.T) {
 
 	tests := []struct {
 		desc          string
-		ipAddressPool *v1beta1.IPAddressPool
+		ipAddressPool *metallbv1.IPAddressPool
 		isNew         bool
 		failValidate  bool
-		expected      *v1beta1.IPAddressPoolList
+		expected      *metallbv1.IPAddressPoolList
 	}{
 		{
 			desc: "Second IPAddressPool",
-			ipAddressPool: &v1beta1.IPAddressPool{
+			ipAddressPool: &metallbv1.IPAddressPool{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-ippool1",
 					Namespace: MetalLBTestNameSpace,
 				},
 			},
 			isNew: true,
-			expected: &v1beta1.IPAddressPoolList{
-				Items: []v1beta1.IPAddressPool{
+			expected: &metallbv1.IPAddressPoolList{
+				Items: []metallbv1.IPAddressPool{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "test-ippool",
@@ -69,15 +69,15 @@ func TestValidateIPAddressPool(t *testing.T) {
 		},
 		{
 			desc: "Same IPAddressPool, update",
-			ipAddressPool: &v1beta1.IPAddressPool{
+			ipAddressPool: &metallbv1.IPAddressPool{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-ippool",
 					Namespace: MetalLBTestNameSpace,
 				},
 			},
 			isNew: false,
-			expected: &v1beta1.IPAddressPoolList{
-				Items: []v1beta1.IPAddressPool{
+			expected: &metallbv1.IPAddressPoolList{
+				Items: []metallbv1.IPAddressPool{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "test-ippool",
@@ -89,15 +89,15 @@ func TestValidateIPAddressPool(t *testing.T) {
 		},
 		{
 			desc: "Validation fails",
-			ipAddressPool: &v1beta1.IPAddressPool{
+			ipAddressPool: &metallbv1.IPAddressPool{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-ippool",
 					Namespace: MetalLBTestNameSpace,
 				},
 			},
 			isNew: false,
-			expected: &v1beta1.IPAddressPoolList{
-				Items: []v1beta1.IPAddressPool{
+			expected: &metallbv1.IPAddressPoolList{
+				Items: []metallbv1.IPAddressPool{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "test-ippool",
@@ -110,7 +110,7 @@ func TestValidateIPAddressPool(t *testing.T) {
 		},
 		{
 			desc: "Validation must fail if created in different namespace",
-			ipAddressPool: &v1beta1.IPAddressPool{
+			ipAddressPool: &metallbv1.IPAddressPool{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-ippool2",
 					Namespace: "default",

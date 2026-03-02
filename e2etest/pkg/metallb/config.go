@@ -9,7 +9,7 @@ import (
 
 	frrcontainer "go.universe.tf/e2etest/pkg/frr/container"
 	"go.universe.tf/e2etest/pkg/ipfamily"
-	metallbv1beta2 "go.universe.tf/metallb/api/v1beta2"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -30,8 +30,8 @@ func init() {
 }
 
 // PeersForContainers returns the metallb config peers related to the given containers.
-func PeersForContainers(containers []*frrcontainer.FRR, ipFamily ipfamily.Family, tweak ...func(p *metallbv1beta2.BGPPeer)) []metallbv1beta2.BGPPeer {
-	var peers []metallbv1beta2.BGPPeer
+func PeersForContainers(containers []*frrcontainer.FRR, ipFamily ipfamily.Family, tweak ...func(p *metallbv1.BGPPeer)) []metallbv1.BGPPeer {
+	var peers []metallbv1.BGPPeer
 
 	for i, c := range containers {
 		addresses := c.AddressesForFamily(ipFamily)
@@ -48,11 +48,11 @@ func PeersForContainers(containers []*frrcontainer.FRR, ipFamily ipfamily.Family
 			ebgpMultihop = true
 		}
 		for i, address := range addresses {
-			peer := metallbv1beta2.BGPPeer{
+			peer := metallbv1.BGPPeer{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: c.Name + fmt.Sprint(i), // Otherwise the peers will override
 				},
-				Spec: metallbv1beta2.BGPPeerSpec{
+				Spec: metallbv1.BGPPeerSpec{
 					Address:               address,
 					ASN:                   c.RouterConfig.ASN,
 					MyASN:                 c.NeighborConfig.ASN,
@@ -73,7 +73,7 @@ func PeersForContainers(containers []*frrcontainer.FRR, ipFamily ipfamily.Family
 }
 
 // WithBFD sets the given bfd profile to the peers.
-func WithBFD(peers []metallbv1beta2.BGPPeer, bfdProfile string) []metallbv1beta2.BGPPeer {
+func WithBFD(peers []metallbv1.BGPPeer, bfdProfile string) []metallbv1.BGPPeer {
 	for i := range peers {
 		peers[i].Spec.BFDProfile = bfdProfile
 	}
@@ -81,7 +81,7 @@ func WithBFD(peers []metallbv1beta2.BGPPeer, bfdProfile string) []metallbv1beta2
 }
 
 // WithRouterID sets the given routerID to the peers.
-func WithRouterID(peers []metallbv1beta2.BGPPeer, routerID string) []metallbv1beta2.BGPPeer {
+func WithRouterID(peers []metallbv1.BGPPeer, routerID string) []metallbv1.BGPPeer {
 	for i := range peers {
 		peers[i].Spec.RouterID = routerID
 	}
@@ -89,7 +89,7 @@ func WithRouterID(peers []metallbv1beta2.BGPPeer, routerID string) []metallbv1be
 }
 
 // WithGracefulRestart sets the GR to true to the peers.
-func WithGracefulRestart(peers []metallbv1beta2.BGPPeer) []metallbv1beta2.BGPPeer {
+func WithGracefulRestart(peers []metallbv1.BGPPeer) []metallbv1.BGPPeer {
 	for i := range peers {
 		peers[i].Spec.EnableGracefulRestart = true
 	}

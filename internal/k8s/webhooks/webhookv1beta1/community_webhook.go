@@ -24,7 +24,7 @@ import (
 	"errors"
 
 	"github.com/go-kit/log/level"
-	"go.universe.tf/metallb/api/v1beta1"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 	v1 "k8s.io/api/admission/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -55,8 +55,8 @@ type CommunityValidator struct {
 
 // Handle handled incoming admission requests for Community objects.
 func (v *CommunityValidator) Handle(ctx context.Context, req admission.Request) admission.Response {
-	var community v1beta1.Community
-	var oldCommunity v1beta1.Community
+	var community metallbv1.Community
+	var oldCommunity metallbv1.Community
 	if req.Operation == v1.Delete {
 		if err := v.decoder.DecodeRaw(req.OldObject, &community); err != nil {
 			return admission.Errored(http.StatusBadRequest, err)
@@ -93,7 +93,7 @@ func (v *CommunityValidator) Handle(ctx context.Context, req admission.Request) 
 }
 
 // validateCommunityCreate implements webhook.Validator so a webhook will be registered for Community.
-func validateCommunityCreate(community *v1beta1.Community) error {
+func validateCommunityCreate(community *metallbv1.Community) error {
 	level.Debug(Logger).Log("webhook", "community", "action", "create", "name", community.Name, "namespace", community.Namespace)
 
 	if community.Namespace != MetalLBNamespace {
@@ -115,7 +115,7 @@ func validateCommunityCreate(community *v1beta1.Community) error {
 }
 
 // validateCommunityUpdate implements webhook.Validator so a webhook will be registered for Community.
-func validateCommunityUpdate(community *v1beta1.Community, _ *v1beta1.Community) error {
+func validateCommunityUpdate(community *metallbv1.Community, _ *metallbv1.Community) error {
 	level.Debug(Logger).Log("webhook", "community", "action", "update", "name", community.Name, "namespace", community.Namespace)
 
 	existingCommunityList, err := getExistingCommunities()
@@ -133,12 +133,12 @@ func validateCommunityUpdate(community *v1beta1.Community, _ *v1beta1.Community)
 }
 
 // validateCommunityDelete implements webhook.Validator so a webhook will be registered for Community.
-func validateCommunityDelete(community *v1beta1.Community) error {
+func validateCommunityDelete(community *metallbv1.Community) error {
 	return nil
 }
 
-var getExistingCommunities = func() (*v1beta1.CommunityList, error) {
-	existingCommunityList := &v1beta1.CommunityList{}
+var getExistingCommunities = func() (*metallbv1.CommunityList, error) {
+	existingCommunityList := &metallbv1.CommunityList{}
 	err := WebhookClient.List(context.Background(), existingCommunityList, &client.ListOptions{Namespace: MetalLBNamespace})
 	if err != nil {
 		return nil, errors.Join(err, errors.New("failed to get existing Community objects"))
@@ -146,7 +146,7 @@ var getExistingCommunities = func() (*v1beta1.CommunityList, error) {
 	return existingCommunityList, nil
 }
 
-func communitylistWithUpdate(existing *v1beta1.CommunityList, toAdd *v1beta1.Community) *v1beta1.CommunityList {
+func communitylistWithUpdate(existing *metallbv1.CommunityList, toAdd *metallbv1.Community) *metallbv1.CommunityList {
 	res := existing.DeepCopy()
 	for i, item := range res.Items { // We override the element with the fresh copy
 		if item.Name == toAdd.Name {

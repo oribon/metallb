@@ -6,8 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	metallbv1beta1 "go.universe.tf/metallb/api/v1beta1"
-	metallbv1beta2 "go.universe.tf/metallb/api/v1beta2"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 	"go.universe.tf/metallb/internal/bgp/community"
 	"go.universe.tf/metallb/internal/ipfamily"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -46,9 +45,6 @@ func DiscardFRROnly(c ClusterResources) error {
 		}
 		if p.Spec.EnableGracefulRestart {
 			return fmt.Errorf("peer %s has EnableGracefulRestart flag set on native bgp mode", p.Spec.Address)
-		}
-		if p.Spec.DisableMP {
-			return fmt.Errorf("peer %s has disable MP flag set on native bgp mode", p.Spec.Address)
 		}
 		if p.Spec.DualStackAddressFamily {
 			return fmt.Errorf("peer %s has dualstackaddressfamily flag set on native bgp mode", p.Spec.Address)
@@ -218,7 +214,7 @@ func hasBFDEcho(peer *Peer, bfdProfiles map[string]*BFDProfile) bool {
 	return false
 }
 
-func peerIdentifier(peer metallbv1beta2.BGPPeerSpec) string {
+func peerIdentifier(peer metallbv1.BGPPeerSpec) string {
 	id := peer.Address
 	if peer.Address == "" {
 		id = peer.Interface
@@ -231,7 +227,7 @@ type poolSelector struct {
 	byLabels []labels.Selector
 }
 
-func (s poolSelector) matchesPool(p metallbv1beta1.IPAddressPool) bool {
+func (s poolSelector) matchesPool(p metallbv1.IPAddressPool) bool {
 	if len(s.byLabels) == 0 && len(s.byName) == 0 {
 		return true
 	}

@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-kit/log"
 	"github.com/google/go-cmp/cmp"
-	"go.universe.tf/metallb/api/v1beta2"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -15,7 +15,7 @@ const testNamespace = "namespace"
 
 func TestValidateBGPPeer(t *testing.T) {
 	MetalLBNamespace = testNamespace
-	bgpPeer := v1beta2.BGPPeer{
+	bgpPeer := metallbv1.BGPPeer{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-peer",
 			Namespace: testNamespace,
@@ -25,9 +25,9 @@ func TestValidateBGPPeer(t *testing.T) {
 	Logger = log.NewNopLogger()
 
 	toRestore := GetExistingBGPPeers
-	GetExistingBGPPeers = func() (*v1beta2.BGPPeerList, error) {
-		return &v1beta2.BGPPeerList{
-			Items: []v1beta2.BGPPeer{
+	GetExistingBGPPeers = func() (*metallbv1.BGPPeerList, error) {
+		return &metallbv1.BGPPeerList{
+			Items: []metallbv1.BGPPeer{
 				bgpPeer,
 			},
 		}, nil
@@ -39,22 +39,22 @@ func TestValidateBGPPeer(t *testing.T) {
 
 	tests := []struct {
 		desc         string
-		bgpPeer      *v1beta2.BGPPeer
+		bgpPeer      *metallbv1.BGPPeer
 		isNew        bool
 		failValidate bool
-		expected     *v1beta2.BGPPeerList
+		expected     *metallbv1.BGPPeerList
 	}{
 		{
 			desc: "Second Peer",
-			bgpPeer: &v1beta2.BGPPeer{
+			bgpPeer: &metallbv1.BGPPeer{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test",
 					Namespace: testNamespace,
 				},
 			},
 			isNew: true,
-			expected: &v1beta2.BGPPeerList{
-				Items: []v1beta2.BGPPeer{
+			expected: &metallbv1.BGPPeerList{
+				Items: []metallbv1.BGPPeer{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "test-peer",
@@ -72,15 +72,15 @@ func TestValidateBGPPeer(t *testing.T) {
 		},
 		{
 			desc: "Same, update",
-			bgpPeer: &v1beta2.BGPPeer{
+			bgpPeer: &metallbv1.BGPPeer{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-peer",
 					Namespace: testNamespace,
 				},
 			},
 			isNew: false,
-			expected: &v1beta2.BGPPeerList{
-				Items: []v1beta2.BGPPeer{
+			expected: &metallbv1.BGPPeerList{
+				Items: []metallbv1.BGPPeer{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "test-peer",
@@ -92,15 +92,15 @@ func TestValidateBGPPeer(t *testing.T) {
 		},
 		{
 			desc: "Validation failed",
-			bgpPeer: &v1beta2.BGPPeer{
+			bgpPeer: &metallbv1.BGPPeer{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-peer",
 					Namespace: testNamespace,
 				},
 			},
 			isNew: false,
-			expected: &v1beta2.BGPPeerList{
-				Items: []v1beta2.BGPPeer{
+			expected: &metallbv1.BGPPeerList{
+				Items: []metallbv1.BGPPeer{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "test-peer",
@@ -113,7 +113,7 @@ func TestValidateBGPPeer(t *testing.T) {
 		},
 		{
 			desc: "Validation must fail if created in different namespace",
-			bgpPeer: &v1beta2.BGPPeer{
+			bgpPeer: &metallbv1.BGPPeer{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-peer1",
 					Namespace: "default",

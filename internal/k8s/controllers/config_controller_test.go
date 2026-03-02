@@ -23,8 +23,7 @@ import (
 	"github.com/go-kit/log"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	v1beta1 "go.universe.tf/metallb/api/v1beta1"
-	v1beta2 "go.universe.tf/metallb/api/v1beta2"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 	"go.universe.tf/metallb/internal/config"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -129,7 +128,7 @@ func TestConfigController(t *testing.T) {
 
 			initObjects := objectsFromResources(resources)
 
-			configStateRef := &v1beta1.ConfigurationState{
+			configStateRef := &metallbv1.ConfigurationState{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "controller",
 					Namespace: testNamespace,
@@ -186,7 +185,7 @@ func TestConfigController(t *testing.T) {
 				t.Errorf("%s: call force reload expected: %v, got: %v", test.desc, test.expectForceReloadCalled, calledForceReload)
 			}
 
-			var gotConfigState v1beta1.ConfigurationState
+			var gotConfigState metallbv1.ConfigurationState
 			if err := fakeClient.Get(context.Background(), types.NamespacedName{
 				Name:      configStateRef.Name,
 				Namespace: configStateRef.Namespace,
@@ -238,12 +237,12 @@ func TestSecretShouldntTrigger(t *testing.T) {
 		t.Fatalf("handler not called")
 	}
 	handlerCalled = false
-	err = fakeClient.Create(context.TODO(), &v1beta2.BGPPeer{
+	err = fakeClient.Create(context.TODO(), &metallbv1.BGPPeer{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "peer2",
 			Namespace: testNamespace,
 		},
-		Spec: v1beta2.BGPPeerSpec{
+		Spec: metallbv1.BGPPeerSpec{
 			MyASN:      42,
 			ASN:        142,
 			Address:    "1.2.3.4",
@@ -281,13 +280,13 @@ func TestSecretShouldntTrigger(t *testing.T) {
 var (
 	testNamespace                  = "test-controller"
 	configControllerValidResources = config.ClusterResources{
-		Peers: []v1beta2.BGPPeer{
+		Peers: []metallbv1.BGPPeer{
 			{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "peer1",
 					Namespace: testNamespace,
 				},
-				Spec: v1beta2.BGPPeerSpec{
+				Spec: metallbv1.BGPPeerSpec{
 					MyASN:      42,
 					ASN:        142,
 					Address:    "1.2.3.4",
@@ -295,7 +294,7 @@ var (
 				},
 			},
 		},
-		BFDProfiles: []v1beta1.BFDProfile{
+		BFDProfiles: []metallbv1.BFDProfile{
 			{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "default",
@@ -303,31 +302,31 @@ var (
 				},
 			},
 		},
-		Pools: []v1beta1.IPAddressPool{
+		Pools: []metallbv1.IPAddressPool{
 			{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "pool1",
 					Namespace: testNamespace,
 				},
-				Spec: v1beta1.IPAddressPoolSpec{
+				Spec: metallbv1.IPAddressPoolSpec{
 					Addresses: []string{
 						"10.20.0.0/16",
 					},
 				},
 			},
 		},
-		BGPAdvs: []v1beta1.BGPAdvertisement{
+		BGPAdvs: []metallbv1.BGPAdvertisement{
 			{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "adv1",
 					Namespace: testNamespace,
 				},
-				Spec: v1beta1.BGPAdvertisementSpec{
+				Spec: metallbv1.BGPAdvertisementSpec{
 					Communities: []string{"bar"},
 				},
 			},
 		},
-		L2Advs: []v1beta1.L2Advertisement{
+		L2Advs: []metallbv1.L2Advertisement{
 			{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "l2adv1",
@@ -341,14 +340,14 @@ var (
 				Data: map[string][]byte{"password": []byte("nopass")},
 			},
 		},
-		Communities: []v1beta1.Community{
+		Communities: []metallbv1.Community{
 			{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "community",
 					Namespace: testNamespace,
 				},
-				Spec: v1beta1.CommunitySpec{
-					Communities: []v1beta1.CommunityAlias{
+				Spec: metallbv1.CommunitySpec{
+					Communities: []metallbv1.CommunityAlias{
 						{
 							Name:  "bar",
 							Value: "64512:1234",
@@ -359,7 +358,7 @@ var (
 		},
 	}
 	configControllerInvalidResources = config.ClusterResources{
-		Peers: []v1beta2.BGPPeer{
+		Peers: []metallbv1.BGPPeer{
 			{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "peer1",

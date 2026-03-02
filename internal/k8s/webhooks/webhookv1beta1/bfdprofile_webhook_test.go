@@ -6,8 +6,7 @@ import (
 	"testing"
 
 	"github.com/go-kit/log"
-	"go.universe.tf/metallb/api/v1beta1"
-	"go.universe.tf/metallb/api/v1beta2"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 	"go.universe.tf/metallb/internal/k8s/webhooks/webhookv1beta2"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -21,15 +20,15 @@ func TestValidateBFDProfile(t *testing.T) {
 	MetalLBNamespace = MetalLBTestNameSpace
 	Logger = log.NewNopLogger()
 	toRestoreBGPPeers := webhookv1beta2.GetExistingBGPPeers
-	webhookv1beta2.GetExistingBGPPeers = func() (*v1beta2.BGPPeerList, error) {
-		return &v1beta2.BGPPeerList{
-			Items: []v1beta2.BGPPeer{
+	webhookv1beta2.GetExistingBGPPeers = func() (*metallbv1.BGPPeerList, error) {
+		return &metallbv1.BGPPeerList{
+			Items: []metallbv1.BGPPeer{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-bgppeer",
 						Namespace: MetalLBTestNameSpace,
 					},
-					Spec: v1beta2.BGPPeerSpec{
+					Spec: metallbv1.BGPPeerSpec{
 						BFDProfile: "bfdprofile",
 					},
 				},
@@ -46,14 +45,14 @@ func TestValidateBFDProfile(t *testing.T) {
 	)
 	tests := []struct {
 		desc         string
-		bfdProfile   *v1beta1.BFDProfile
+		bfdProfile   *metallbv1.BFDProfile
 		validateType int
 		failValidate bool
 	}{
 		{
 			desc:         "Delete bfdprofile used by bgppeer",
 			validateType: isDel,
-			bfdProfile: &v1beta1.BFDProfile{
+			bfdProfile: &metallbv1.BFDProfile{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "bfdprofile",
 					Namespace: MetalLBTestNameSpace,
@@ -64,7 +63,7 @@ func TestValidateBFDProfile(t *testing.T) {
 		{
 			desc:         "Validation must fail if created in different namespace",
 			validateType: isNew,
-			bfdProfile: &v1beta1.BFDProfile{
+			bfdProfile: &metallbv1.BFDProfile{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "bfdprofile1",
 					Namespace: "default",

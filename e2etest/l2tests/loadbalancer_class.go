@@ -12,7 +12,7 @@ import (
 	"go.universe.tf/e2etest/pkg/k8s"
 	"go.universe.tf/e2etest/pkg/k8sclient"
 	"go.universe.tf/e2etest/pkg/service"
-	metallbv1beta1 "go.universe.tf/metallb/api/v1beta1"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 
 	jigservice "go.universe.tf/e2etest/pkg/jigservice"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -50,19 +50,19 @@ var _ = ginkgo.Describe("LoadBalancer class", func() {
 	ginkgo.Context("A service with loadbalancer class", func() {
 		ginkgo.It("should not get an ip", func() {
 			resources := config.Resources{
-				Pools: []metallbv1beta1.IPAddressPool{
+				Pools: []metallbv1.IPAddressPool{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "l2-test",
 						},
-						Spec: metallbv1beta1.IPAddressPoolSpec{
+						Spec: metallbv1.IPAddressPoolSpec{
 							Addresses: []string{
 								IPV4ServiceRange,
 								IPV6ServiceRange},
 						},
 					},
 				},
-				L2Advs: []metallbv1beta1.L2Advertisement{
+				L2Advs: []metallbv1.L2Advertisement{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "empty",

@@ -7,14 +7,14 @@ import (
 
 	"github.com/go-kit/log"
 	"github.com/google/go-cmp/cmp"
-	"go.universe.tf/metallb/api/v1beta1"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 	v1core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestValidateBGPAdvertisement(t *testing.T) {
 	MetalLBNamespace = MetalLBTestNameSpace
-	bgpAdv := v1beta1.BGPAdvertisement{
+	bgpAdv := metallbv1.BGPAdvertisement{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-bgpadv",
 			Namespace: MetalLBTestNameSpace,
@@ -24,16 +24,16 @@ func TestValidateBGPAdvertisement(t *testing.T) {
 	Logger = log.NewNopLogger()
 
 	toRestore := getExistingBGPAdvs
-	getExistingBGPAdvs = func() (*v1beta1.BGPAdvertisementList, error) {
-		return &v1beta1.BGPAdvertisementList{
-			Items: []v1beta1.BGPAdvertisement{
+	getExistingBGPAdvs = func() (*metallbv1.BGPAdvertisementList, error) {
+		return &metallbv1.BGPAdvertisementList{
+			Items: []metallbv1.BGPAdvertisement{
 				bgpAdv,
 			},
 		}, nil
 	}
 	toRestoreIPAddressPools := getExistingIPAddressPools
-	getExistingIPAddressPools = func() (*v1beta1.IPAddressPoolList, error) {
-		return &v1beta1.IPAddressPoolList{}, nil
+	getExistingIPAddressPools = func() (*metallbv1.IPAddressPoolList, error) {
+		return &metallbv1.IPAddressPoolList{}, nil
 	}
 	toRestoreNodes := getExistingNodes
 	getExistingNodes = func() (*v1core.NodeList, error) {
@@ -48,22 +48,22 @@ func TestValidateBGPAdvertisement(t *testing.T) {
 
 	tests := []struct {
 		desc         string
-		bgpAdv       *v1beta1.BGPAdvertisement
+		bgpAdv       *metallbv1.BGPAdvertisement
 		isNew        bool
 		failValidate bool
-		expected     *v1beta1.BGPAdvertisementList
+		expected     *metallbv1.BGPAdvertisementList
 	}{
 		{
 			desc: "Second Adv",
-			bgpAdv: &v1beta1.BGPAdvertisement{
+			bgpAdv: &metallbv1.BGPAdvertisement{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test",
 					Namespace: MetalLBTestNameSpace,
 				},
 			},
 			isNew: true,
-			expected: &v1beta1.BGPAdvertisementList{
-				Items: []v1beta1.BGPAdvertisement{
+			expected: &metallbv1.BGPAdvertisementList{
+				Items: []metallbv1.BGPAdvertisement{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "test-bgpadv",
@@ -81,15 +81,15 @@ func TestValidateBGPAdvertisement(t *testing.T) {
 		},
 		{
 			desc: "Same, update",
-			bgpAdv: &v1beta1.BGPAdvertisement{
+			bgpAdv: &metallbv1.BGPAdvertisement{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-bgpadv",
 					Namespace: MetalLBTestNameSpace,
 				},
 			},
 			isNew: false,
-			expected: &v1beta1.BGPAdvertisementList{
-				Items: []v1beta1.BGPAdvertisement{
+			expected: &metallbv1.BGPAdvertisementList{
+				Items: []metallbv1.BGPAdvertisement{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "test-bgpadv",
@@ -101,15 +101,15 @@ func TestValidateBGPAdvertisement(t *testing.T) {
 		},
 		{
 			desc: "Same, new",
-			bgpAdv: &v1beta1.BGPAdvertisement{
+			bgpAdv: &metallbv1.BGPAdvertisement{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-bgpadv",
 					Namespace: MetalLBTestNameSpace,
 				},
 			},
 			isNew: true,
-			expected: &v1beta1.BGPAdvertisementList{
-				Items: []v1beta1.BGPAdvertisement{
+			expected: &metallbv1.BGPAdvertisementList{
+				Items: []metallbv1.BGPAdvertisement{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "test-bgpadv",
@@ -122,7 +122,7 @@ func TestValidateBGPAdvertisement(t *testing.T) {
 		},
 		{
 			desc: "Validation must fail if created in different namespace",
-			bgpAdv: &v1beta1.BGPAdvertisement{
+			bgpAdv: &metallbv1.BGPAdvertisement{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-bgpadv1",
 					Namespace: "default",

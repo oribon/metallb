@@ -10,14 +10,14 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"go.universe.tf/metallb/api/v1beta1"
-	v1 "k8s.io/api/core/v1"
+	metallbv1 "go.universe.tf/metallb/api/v1"
+	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // Returns the ServiceBGPStatus resource for the given service and node.
-func BGPForServiceAndNode(cs client.Client, svc *v1.Service, node string) (*v1beta1.ServiceBGPStatus, error) {
-	statusList := v1beta1.ServiceBGPStatusList{}
+func BGPForServiceAndNode(cs client.Client, svc *corev1.Service, node string) (*metallbv1.ServiceBGPStatus, error) {
+	statusList := metallbv1.ServiceBGPStatusList{}
 	err := cs.List(context.TODO(), &statusList,
 		client.InNamespace(metallb.Namespace),
 		client.MatchingLabels{

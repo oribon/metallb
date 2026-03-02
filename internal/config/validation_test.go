@@ -6,8 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"go.universe.tf/metallb/api/v1beta1"
-	"go.universe.tf/metallb/api/v1beta2"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 )
@@ -21,9 +20,9 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "peer with bfd profile",
 			config: ClusterResources{
-				Peers: []v1beta2.BGPPeer{
+				Peers: []metallbv1.BGPPeer{
 					{
-						Spec: v1beta2.BGPPeerSpec{
+						Spec: metallbv1.BGPPeerSpec{
 							Address:    "1.2.3.4",
 							BFDProfile: "foo",
 						},
@@ -35,14 +34,14 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "bfd profile set",
 			config: ClusterResources{
-				Peers: []v1beta2.BGPPeer{
+				Peers: []metallbv1.BGPPeer{
 					{
-						Spec: v1beta2.BGPPeerSpec{
+						Spec: metallbv1.BGPPeerSpec{
 							Address: "1.2.3.4",
 						},
 					},
 				},
-				BFDProfiles: []v1beta1.BFDProfile{
+				BFDProfiles: []metallbv1.BFDProfile{
 					{
 						ObjectMeta: v1.ObjectMeta{Name: "foo"},
 					},
@@ -53,14 +52,14 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "v6 address",
 			config: ClusterResources{
-				Pools: []v1beta1.IPAddressPool{
+				Pools: []metallbv1.IPAddressPool{
 					{
-						Spec: v1beta1.IPAddressPoolSpec{
+						Spec: metallbv1.IPAddressPoolSpec{
 							Addresses: []string{"2001:db8::/64"},
 						},
 					},
 				},
-				BGPAdvs: []v1beta1.BGPAdvertisement{
+				BGPAdvs: []metallbv1.BGPAdvertisement{
 					{
 						ObjectMeta: v1.ObjectMeta{
 							Name: "foo",
@@ -73,22 +72,22 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "v6 address but pool not selected",
 			config: ClusterResources{
-				Pools: []v1beta1.IPAddressPool{
+				Pools: []metallbv1.IPAddressPool{
 					{
 						ObjectMeta: v1.ObjectMeta{
 							Name: "foo",
 						},
-						Spec: v1beta1.IPAddressPoolSpec{
+						Spec: metallbv1.IPAddressPoolSpec{
 							Addresses: []string{"2001:db8::/64"},
 						},
 					},
 				},
-				BGPAdvs: []v1beta1.BGPAdvertisement{
+				BGPAdvs: []metallbv1.BGPAdvertisement{
 					{
 						ObjectMeta: v1.ObjectMeta{
 							Name: "foo",
 						},
-						Spec: v1beta1.BGPAdvertisementSpec{
+						Spec: metallbv1.BGPAdvertisementSpec{
 							IPAddressPools: []string{"bar"},
 						},
 					},
@@ -98,22 +97,22 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "v6 address and selected",
 			config: ClusterResources{
-				Pools: []v1beta1.IPAddressPool{
+				Pools: []metallbv1.IPAddressPool{
 					{
 						ObjectMeta: v1.ObjectMeta{
 							Name: "foo",
 						},
-						Spec: v1beta1.IPAddressPoolSpec{
+						Spec: metallbv1.IPAddressPoolSpec{
 							Addresses: []string{"2001:db8::/64"},
 						},
 					},
 				},
-				BGPAdvs: []v1beta1.BGPAdvertisement{
+				BGPAdvs: []metallbv1.BGPAdvertisement{
 					{
 						ObjectMeta: v1.ObjectMeta{
 							Name: "bar",
 						},
-						Spec: v1beta1.BGPAdvertisementSpec{
+						Spec: metallbv1.BGPAdvertisementSpec{
 							IPAddressPools: []string{"foo1"},
 						},
 					},
@@ -121,7 +120,7 @@ func TestValidate(t *testing.T) {
 						ObjectMeta: v1.ObjectMeta{
 							Name: "bar",
 						},
-						Spec: v1beta1.BGPAdvertisementSpec{
+						Spec: metallbv1.BGPAdvertisementSpec{
 							IPAddressPools: []string{"foo"},
 						},
 					},
@@ -132,23 +131,23 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "v6 address and selected by labels",
 			config: ClusterResources{
-				Pools: []v1beta1.IPAddressPool{
+				Pools: []metallbv1.IPAddressPool{
 					{
 						ObjectMeta: v1.ObjectMeta{
 							Name:   "foo",
 							Labels: map[string]string{"key": "value"},
 						},
-						Spec: v1beta1.IPAddressPoolSpec{
+						Spec: metallbv1.IPAddressPoolSpec{
 							Addresses: []string{"2001:db8::/64"},
 						},
 					},
 				},
-				BGPAdvs: []v1beta1.BGPAdvertisement{
+				BGPAdvs: []metallbv1.BGPAdvertisement{
 					{
 						ObjectMeta: v1.ObjectMeta{
 							Name: "bar",
 						},
-						Spec: v1beta1.BGPAdvertisementSpec{
+						Spec: metallbv1.BGPAdvertisementSpec{
 							IPAddressPools: []string{"foo1"},
 						},
 					},
@@ -156,7 +155,7 @@ func TestValidate(t *testing.T) {
 						ObjectMeta: v1.ObjectMeta{
 							Name: "bar",
 						},
-						Spec: v1beta1.BGPAdvertisementSpec{
+						Spec: metallbv1.BGPAdvertisementSpec{
 							IPAddressPoolSelectors: []v1.LabelSelector{
 								{
 									MatchLabels: map[string]string{"key": "value"},
@@ -171,23 +170,10 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "enable BGP GracefulRestart",
 			config: ClusterResources{
-				Peers: []v1beta2.BGPPeer{
+				Peers: []metallbv1.BGPPeer{
 					{
-						Spec: v1beta2.BGPPeerSpec{
+						Spec: metallbv1.BGPPeerSpec{
 							EnableGracefulRestart: true,
-						},
-					},
-				},
-			},
-			mustFail: true,
-		},
-		{
-			desc: "disable BGP MP",
-			config: ClusterResources{
-				Peers: []v1beta2.BGPPeer{
-					{
-						Spec: v1beta2.BGPPeerSpec{
-							DisableMP: true,
 						},
 					},
 				},
@@ -197,10 +183,10 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "dynamic ASN",
 			config: ClusterResources{
-				Peers: []v1beta2.BGPPeer{
+				Peers: []metallbv1.BGPPeer{
 					{
-						Spec: v1beta2.BGPPeerSpec{
-							DynamicASN: "internal",
+						Spec: metallbv1.BGPPeerSpec{
+							DynamicASN: metallbv1.InternalASNMode,
 						},
 					},
 				},
@@ -210,9 +196,9 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "interface",
 			config: ClusterResources{
-				Peers: []v1beta2.BGPPeer{
+				Peers: []metallbv1.BGPPeer{
 					{
-						Spec: v1beta2.BGPPeerSpec{
+						Spec: metallbv1.BGPPeerSpec{
 							Interface: "eth0",
 						},
 					},
@@ -223,9 +209,9 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "keepalive time",
 			config: ClusterResources{
-				Peers: []v1beta2.BGPPeer{
+				Peers: []metallbv1.BGPPeer{
 					{
-						Spec: v1beta2.BGPPeerSpec{
+						Spec: metallbv1.BGPPeerSpec{
 							KeepaliveTime: &v1.Duration{Duration: time.Second},
 						},
 					},
@@ -236,9 +222,9 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "connect time",
 			config: ClusterResources{
-				Peers: []v1beta2.BGPPeer{
+				Peers: []metallbv1.BGPPeer{
 					{
-						Spec: v1beta2.BGPPeerSpec{
+						Spec: metallbv1.BGPPeerSpec{
 							ConnectTime: ptr.To(v1.Duration{Duration: time.Second}),
 						},
 					},
@@ -249,9 +235,9 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "large BGP community inside BGP Advertisement",
 			config: ClusterResources{
-				BGPAdvs: []v1beta1.BGPAdvertisement{
+				BGPAdvs: []metallbv1.BGPAdvertisement{
 					{
-						Spec: v1beta1.BGPAdvertisementSpec{
+						Spec: metallbv1.BGPAdvertisementSpec{
 							Communities: []string{"large:123:456:789"},
 						},
 					},
@@ -262,10 +248,10 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "large BGP community inside Community CR",
 			config: ClusterResources{
-				Communities: []v1beta1.Community{
+				Communities: []metallbv1.Community{
 					{
-						Spec: v1beta1.CommunitySpec{
-							Communities: []v1beta1.CommunityAlias{
+						Spec: metallbv1.CommunitySpec{
+							Communities: []metallbv1.CommunityAlias{
 								{
 									Value: "large:123:456:789",
 								},
@@ -279,9 +265,9 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "should pass",
 			config: ClusterResources{
-				Peers: []v1beta2.BGPPeer{
+				Peers: []metallbv1.BGPPeer{
 					{
-						Spec: v1beta2.BGPPeerSpec{
+						Spec: metallbv1.BGPPeerSpec{
 							Address: "1.2.3.4",
 						},
 					},
@@ -312,9 +298,9 @@ func TestValidateFRR(t *testing.T) {
 		{
 			desc: "peer with routerid",
 			config: ClusterResources{
-				Peers: []v1beta2.BGPPeer{
+				Peers: []metallbv1.BGPPeer{
 					{
-						Spec: v1beta2.BGPPeerSpec{
+						Spec: metallbv1.BGPPeerSpec{
 							Address:  "1.2.3.4",
 							RouterID: "1.2.3.4",
 						},
@@ -325,21 +311,21 @@ func TestValidateFRR(t *testing.T) {
 		{
 			desc: "routerid set, one different",
 			config: ClusterResources{
-				Peers: []v1beta2.BGPPeer{
+				Peers: []metallbv1.BGPPeer{
 					{
-						Spec: v1beta2.BGPPeerSpec{
+						Spec: metallbv1.BGPPeerSpec{
 							Address:  "1.2.3.4",
 							RouterID: "1.2.3.4",
 						},
 					},
 					{
-						Spec: v1beta2.BGPPeerSpec{
+						Spec: metallbv1.BGPPeerSpec{
 							Address:  "1.2.3.5",
 							RouterID: "1.2.3.4",
 						},
 					},
 					{
-						Spec: v1beta2.BGPPeerSpec{
+						Spec: metallbv1.BGPPeerSpec{
 							Address:  "1.2.3.6",
 							RouterID: "1.2.3.5",
 						},
@@ -351,21 +337,21 @@ func TestValidateFRR(t *testing.T) {
 		{
 			desc: "routerid set, one not set",
 			config: ClusterResources{
-				Peers: []v1beta2.BGPPeer{
+				Peers: []metallbv1.BGPPeer{
 					{
-						Spec: v1beta2.BGPPeerSpec{
+						Spec: metallbv1.BGPPeerSpec{
 							Address:  "1.2.3.4",
 							RouterID: "1.2.3.4",
 						},
 					},
 					{
-						Spec: v1beta2.BGPPeerSpec{
+						Spec: metallbv1.BGPPeerSpec{
 							Address:  "1.2.3.5",
 							RouterID: "1.2.3.4",
 						},
 					},
 					{
-						Spec: v1beta2.BGPPeerSpec{
+						Spec: metallbv1.BGPPeerSpec{
 							Address: "1.2.3.6",
 						},
 					},
@@ -376,15 +362,15 @@ func TestValidateFRR(t *testing.T) {
 		{
 			desc: "bfd profile set",
 			config: ClusterResources{
-				Peers: []v1beta2.BGPPeer{
+				Peers: []metallbv1.BGPPeer{
 					{
-						Spec: v1beta2.BGPPeerSpec{
+						Spec: metallbv1.BGPPeerSpec{
 							Address:  "1.2.3.4",
 							RouterID: "1.2.3.4",
 						},
 					},
 				},
-				BFDProfiles: []v1beta1.BFDProfile{
+				BFDProfiles: []metallbv1.BFDProfile{
 					{
 						ObjectMeta: v1.ObjectMeta{
 							Name: "foo",
@@ -396,21 +382,21 @@ func TestValidateFRR(t *testing.T) {
 		{
 			desc: "myAsn set, all equals",
 			config: ClusterResources{
-				Peers: []v1beta2.BGPPeer{
+				Peers: []metallbv1.BGPPeer{
 					{
-						Spec: v1beta2.BGPPeerSpec{
+						Spec: metallbv1.BGPPeerSpec{
 							Address: "1.2.3.4",
 							MyASN:   123,
 						},
 					},
 					{
-						Spec: v1beta2.BGPPeerSpec{
+						Spec: metallbv1.BGPPeerSpec{
 							Address: "1.2.3.5",
 							MyASN:   123,
 						},
 					},
 					{
-						Spec: v1beta2.BGPPeerSpec{
+						Spec: metallbv1.BGPPeerSpec{
 							Address: "1.2.3.6",
 							MyASN:   123,
 						},
@@ -421,21 +407,21 @@ func TestValidateFRR(t *testing.T) {
 		{
 			desc: "myAsn set, one different",
 			config: ClusterResources{
-				Peers: []v1beta2.BGPPeer{
+				Peers: []metallbv1.BGPPeer{
 					{
-						Spec: v1beta2.BGPPeerSpec{
+						Spec: metallbv1.BGPPeerSpec{
 							Address: "1.2.3.4",
 							MyASN:   123,
 						},
 					},
 					{
-						Spec: v1beta2.BGPPeerSpec{
+						Spec: metallbv1.BGPPeerSpec{
 							Address: "1.2.3.5",
 							MyASN:   123,
 						},
 					},
 					{
-						Spec: v1beta2.BGPPeerSpec{
+						Spec: metallbv1.BGPPeerSpec{
 							Address: "1.2.3.6",
 							MyASN:   124,
 						},
@@ -447,21 +433,21 @@ func TestValidateFRR(t *testing.T) {
 		{
 			desc: "myAsn set, one different but with different vrf",
 			config: ClusterResources{
-				Peers: []v1beta2.BGPPeer{
+				Peers: []metallbv1.BGPPeer{
 					{
-						Spec: v1beta2.BGPPeerSpec{
+						Spec: metallbv1.BGPPeerSpec{
 							Address: "1.2.3.4",
 							MyASN:   123,
 						},
 					},
 					{
-						Spec: v1beta2.BGPPeerSpec{
+						Spec: metallbv1.BGPPeerSpec{
 							Address: "1.2.3.5",
 							MyASN:   123,
 						},
 					},
 					{
-						Spec: v1beta2.BGPPeerSpec{
+						Spec: metallbv1.BGPPeerSpec{
 							Address: "1.2.3.6",
 							MyASN:   124,
 							VRFName: "red",
@@ -473,23 +459,23 @@ func TestValidateFRR(t *testing.T) {
 		{
 			desc: "myAsn set, two different but with different vrf",
 			config: ClusterResources{
-				Peers: []v1beta2.BGPPeer{
+				Peers: []metallbv1.BGPPeer{
 					{
-						Spec: v1beta2.BGPPeerSpec{
+						Spec: metallbv1.BGPPeerSpec{
 							Address: "1.2.3.4",
 							MyASN:   123,
 							VRFName: "red",
 						},
 					},
 					{
-						Spec: v1beta2.BGPPeerSpec{
+						Spec: metallbv1.BGPPeerSpec{
 							Address: "1.2.3.5",
 							MyASN:   123,
 							VRFName: "red",
 						},
 					},
 					{
-						Spec: v1beta2.BGPPeerSpec{
+						Spec: metallbv1.BGPPeerSpec{
 							Address: "1.2.3.6",
 							MyASN:   124,
 						},
@@ -500,14 +486,14 @@ func TestValidateFRR(t *testing.T) {
 		{
 			desc: "duplicate bgp address",
 			config: ClusterResources{
-				Peers: []v1beta2.BGPPeer{
+				Peers: []metallbv1.BGPPeer{
 					{
-						Spec: v1beta2.BGPPeerSpec{
+						Spec: metallbv1.BGPPeerSpec{
 							Address: "1.2.3.4",
 						},
 					},
 					{
-						Spec: v1beta2.BGPPeerSpec{
+						Spec: metallbv1.BGPPeerSpec{
 							Address: "1.2.3.4",
 						},
 					},
@@ -517,19 +503,19 @@ func TestValidateFRR(t *testing.T) {
 		}, {
 			desc: "duplicate bgp address, different vrfs",
 			config: ClusterResources{
-				Peers: []v1beta2.BGPPeer{
+				Peers: []metallbv1.BGPPeer{
 					{
-						Spec: v1beta2.BGPPeerSpec{
+						Spec: metallbv1.BGPPeerSpec{
 							Address: "1.2.3.4",
 						},
 					},
 					{
-						Spec: v1beta2.BGPPeerSpec{
+						Spec: metallbv1.BGPPeerSpec{
 							Address: "1.2.3.4",
 							VRFName: "red",
 						},
 					}, {
-						Spec: v1beta2.BGPPeerSpec{
+						Spec: metallbv1.BGPPeerSpec{
 							Address: "1.2.3.4",
 							VRFName: "green",
 						},
@@ -540,19 +526,19 @@ func TestValidateFRR(t *testing.T) {
 		}, {
 			desc: "duplicate bgp address, same vrf",
 			config: ClusterResources{
-				Peers: []v1beta2.BGPPeer{
+				Peers: []metallbv1.BGPPeer{
 					{
-						Spec: v1beta2.BGPPeerSpec{
+						Spec: metallbv1.BGPPeerSpec{
 							Address: "1.2.3.4",
 						},
 					},
 					{
-						Spec: v1beta2.BGPPeerSpec{
+						Spec: metallbv1.BGPPeerSpec{
 							Address: "1.2.3.4",
 							VRFName: "red",
 						},
 					}, {
-						Spec: v1beta2.BGPPeerSpec{
+						Spec: metallbv1.BGPPeerSpec{
 							Address: "1.2.3.4",
 							VRFName: "red",
 						},
@@ -564,15 +550,15 @@ func TestValidateFRR(t *testing.T) {
 		{
 			desc: "two peers with interface set different",
 			config: ClusterResources{
-				Peers: []v1beta2.BGPPeer{
+				Peers: []metallbv1.BGPPeer{
 					{
-						Spec: v1beta2.BGPPeerSpec{
+						Spec: metallbv1.BGPPeerSpec{
 							Interface: "eth0",
 							MyASN:     123,
 						},
 					},
 					{
-						Spec: v1beta2.BGPPeerSpec{
+						Spec: metallbv1.BGPPeerSpec{
 							Interface: "eth1",
 							MyASN:     123,
 						},
@@ -584,15 +570,15 @@ func TestValidateFRR(t *testing.T) {
 		{
 			desc: "two peers with interface set same",
 			config: ClusterResources{
-				Peers: []v1beta2.BGPPeer{
+				Peers: []metallbv1.BGPPeer{
 					{
-						Spec: v1beta2.BGPPeerSpec{
+						Spec: metallbv1.BGPPeerSpec{
 							Interface: "eth0",
 							MyASN:     123,
 						},
 					},
 					{
-						Spec: v1beta2.BGPPeerSpec{
+						Spec: metallbv1.BGPPeerSpec{
 							Interface: "eth0",
 							MyASN:     123,
 						},

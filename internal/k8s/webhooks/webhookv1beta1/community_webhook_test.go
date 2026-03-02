@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-kit/log"
 	"github.com/google/go-cmp/cmp"
-	"go.universe.tf/metallb/api/v1beta1"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -16,9 +16,9 @@ func TestValidateCommunity(t *testing.T) {
 	Logger = log.NewNopLogger()
 
 	toRestoreCommunities := getExistingCommunities
-	getExistingCommunities = func() (*v1beta1.CommunityList, error) {
-		return &v1beta1.CommunityList{
-			Items: []v1beta1.Community{
+	getExistingCommunities = func() (*metallbv1.CommunityList, error) {
+		return &metallbv1.CommunityList{
+			Items: []metallbv1.Community{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-commuinty1",
@@ -34,22 +34,22 @@ func TestValidateCommunity(t *testing.T) {
 
 	tests := []struct {
 		desc           string
-		commuinty      *v1beta1.Community
+		commuinty      *metallbv1.Community
 		isNewCommunity bool
 		failValidate   bool
-		expected       *v1beta1.CommunityList
+		expected       *metallbv1.CommunityList
 	}{
 		{
 			desc: "Second Community",
-			commuinty: &v1beta1.Community{
+			commuinty: &metallbv1.Community{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-community2",
 					Namespace: MetalLBTestNameSpace,
 				},
 			},
 			isNewCommunity: true,
-			expected: &v1beta1.CommunityList{
-				Items: []v1beta1.Community{
+			expected: &metallbv1.CommunityList{
+				Items: []metallbv1.Community{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "test-commuinty1",
@@ -67,15 +67,15 @@ func TestValidateCommunity(t *testing.T) {
 		},
 		{
 			desc: "Same Community, update",
-			commuinty: &v1beta1.Community{
+			commuinty: &metallbv1.Community{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-commuinty1",
 					Namespace: MetalLBTestNameSpace,
 				},
 			},
 			isNewCommunity: false,
-			expected: &v1beta1.CommunityList{
-				Items: []v1beta1.Community{
+			expected: &metallbv1.CommunityList{
+				Items: []metallbv1.Community{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "test-commuinty1",
@@ -87,15 +87,15 @@ func TestValidateCommunity(t *testing.T) {
 		},
 		{
 			desc: "Same community, new",
-			commuinty: &v1beta1.Community{
+			commuinty: &metallbv1.Community{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-commuinty1",
 					Namespace: MetalLBTestNameSpace,
 				},
 			},
 			isNewCommunity: true,
-			expected: &v1beta1.CommunityList{
-				Items: []v1beta1.Community{
+			expected: &metallbv1.CommunityList{
+				Items: []metallbv1.Community{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "test-commuinty1",
@@ -108,7 +108,7 @@ func TestValidateCommunity(t *testing.T) {
 		},
 		{
 			desc: "Validation must fail if created in different namespace",
-			commuinty: &v1beta1.Community{
+			commuinty: &metallbv1.Community{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-commuinty2",
 					Namespace: "default",

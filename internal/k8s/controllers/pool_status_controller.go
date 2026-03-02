@@ -8,7 +8,7 @@ import (
 
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
-	"go.universe.tf/metallb/api/v1beta1"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 	"go.universe.tf/metallb/internal/allocator"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -53,7 +53,7 @@ func (r *PoolStatusReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	level.Info(r.Logger).Log("controller", "PoolStatusReconciler", "start reconcile", req.String())
 	defer level.Info(r.Logger).Log("controller", "PoolStatusReconciler", "end reconcile", req.String())
 
-	var pool v1beta1.IPAddressPool
+	var pool metallbv1.IPAddressPool
 	err := r.Get(ctx, req.NamespacedName, &pool)
 	if apierrors.IsNotFound(err) {
 		return ctrl.Result{}, nil
@@ -64,7 +64,7 @@ func (r *PoolStatusReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	c := r.CountersFetcher(pool.Name)
 
-	newStatus := v1beta1.IPAddressPoolStatus{
+	newStatus := metallbv1.IPAddressPoolStatus{
 		AssignedIPv4:  c.AssignedIPv4,
 		AssignedIPv6:  c.AssignedIPv6,
 		AvailableIPv4: c.AvailableIPv4,
@@ -93,7 +93,7 @@ func (r *PoolStatusReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("PoolStatusController").
-		For(&v1beta1.IPAddressPool{}).
+		For(&metallbv1.IPAddressPool{}).
 		WithEventFilter(p).
 		WatchesRawSource(source.Channel(r.ReconcileChan, &handler.EnqueueRequestForObject{})).
 		Complete(r)

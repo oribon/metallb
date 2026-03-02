@@ -12,7 +12,7 @@ import (
 	"go.universe.tf/e2etest/pkg/k8s"
 	"go.universe.tf/e2etest/pkg/k8sclient"
 	"go.universe.tf/e2etest/pkg/service"
-	metallbv1beta1 "go.universe.tf/metallb/api/v1beta1"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -63,13 +63,13 @@ var _ = ginkgo.Describe("L2-ServiceSelector", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			resources := config.Resources{
-				Pools: []metallbv1beta1.IPAddressPool{
+				Pools: []metallbv1.IPAddressPool{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:   "pool-a",
 							Labels: map[string]string{"pool": "a"},
 						},
-						Spec: metallbv1beta1.IPAddressPoolSpec{
+						Spec: metallbv1.IPAddressPoolSpec{
 							Addresses: []string{poolAv4 + "/32", poolAv6 + "/128"},
 						},
 					},
@@ -78,17 +78,17 @@ var _ = ginkgo.Describe("L2-ServiceSelector", func() {
 							Name:   "pool-b",
 							Labels: map[string]string{"pool": "b"},
 						},
-						Spec: metallbv1beta1.IPAddressPoolSpec{
+						Spec: metallbv1.IPAddressPoolSpec{
 							Addresses: []string{poolBv4 + "/32", poolBv6 + "/128"},
 						},
 					},
 				},
-				L2Advs: []metallbv1beta1.L2Advertisement{
+				L2Advs: []metallbv1.L2Advertisement{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "adv-pool-a-expose-true",
 						},
-						Spec: metallbv1beta1.L2AdvertisementSpec{
+						Spec: metallbv1.L2AdvertisementSpec{
 							IPAddressPoolSelectors: []metav1.LabelSelector{
 								{
 									MatchLabels: map[string]string{"pool": "a"},
@@ -184,12 +184,12 @@ var _ = ginkgo.Describe("L2-ServiceSelector", func() {
 	ginkgo.Context("Service Selector", func() {
 		ginkgo.BeforeEach(func() {
 			resources := config.Resources{
-				Pools: []metallbv1beta1.IPAddressPool{
+				Pools: []metallbv1.IPAddressPool{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "l2-test",
 						},
-						Spec: metallbv1beta1.IPAddressPoolSpec{
+						Spec: metallbv1.IPAddressPoolSpec{
 							Addresses: []string{
 								IPV4ServiceRange,
 								IPV6ServiceRange},
@@ -203,11 +203,11 @@ var _ = ginkgo.Describe("L2-ServiceSelector", func() {
 		})
 
 		ginkgo.It("should use OR logic for multiple selectors", func() {
-			l2Advertisement := metallbv1beta1.L2Advertisement{
+			l2Advertisement := metallbv1.L2Advertisement{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "with-multiple-selectors",
 				},
-				Spec: metallbv1beta1.L2AdvertisementSpec{
+				Spec: metallbv1.L2AdvertisementSpec{
 					ServiceSelectors: []metav1.LabelSelector{
 						{
 							MatchLabels: map[string]string{"app": "nginx"},
@@ -220,7 +220,7 @@ var _ = ginkgo.Describe("L2-ServiceSelector", func() {
 			}
 
 			resources := config.Resources{
-				L2Advs: []metallbv1beta1.L2Advertisement{l2Advertisement},
+				L2Advs: []metallbv1.L2Advertisement{l2Advertisement},
 			}
 
 			err := ConfigUpdater.Update(resources)

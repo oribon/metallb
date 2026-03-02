@@ -5,19 +5,19 @@ package webhookv1beta2
 import (
 	"errors"
 
-	"go.universe.tf/metallb/api/v1beta2"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type mockValidator struct {
-	bgpPeers   *v1beta2.BGPPeerList
+	bgpPeers   *metallbv1.BGPPeerList
 	forceError bool
 }
 
 func (m *mockValidator) Validate(objects ...client.ObjectList) error {
 	for _, obj := range objects { // assuming one object per type
 		switch list := obj.(type) {
-		case *v1beta2.BGPPeerList:
+		case *metallbv1.BGPPeerList:
 			m.bgpPeers = list
 		default:
 			panic("unexpected type")

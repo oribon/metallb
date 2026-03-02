@@ -32,8 +32,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	v1beta1 "go.universe.tf/metallb/api/v1beta1"
-	v1beta2 "go.universe.tf/metallb/api/v1beta2"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 	"go.universe.tf/metallb/internal/allocator"
 	frrk8s "go.universe.tf/metallb/internal/bgp/frrk8s"
 	"go.universe.tf/metallb/internal/config"
@@ -96,10 +95,7 @@ func TestManager(t *testing.T) {
 var _ = BeforeSuite(func() {
 	logf.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
 
-	err := v1beta1.AddToScheme(scheme.Scheme)
-	Expect(err).ToNot(HaveOccurred())
-
-	err = v1beta2.AddToScheme(scheme.Scheme)
+	err := metallbv1.AddToScheme(scheme.Scheme)
 	Expect(err).ToNot(HaveOccurred())
 
 	err = corev1.AddToScheme(scheme.Scheme)
@@ -526,8 +522,8 @@ var _ = Describe("FRRK8S Controller", func() {
 var _ = Describe("Layer2 Status Controller", func() {
 	Context("SetupWithManager", func() {
 		It("Should Reconcile correctly", func() {
-			statusObjFetcherFunc := func() ([]v1beta1.ServiceL2Status, error) {
-				statusList := v1beta1.ServiceL2StatusList{}
+			statusObjFetcherFunc := func() ([]metallbv1.ServiceL2Status, error) {
+				statusList := metallbv1.ServiceL2StatusList{}
 				err := k8sClient.List(context.TODO(), &statusList,
 					client.MatchingLabels{
 						LabelServiceName:      testServiceName,
@@ -541,7 +537,7 @@ var _ = Describe("Layer2 Status Controller", func() {
 				return statusList.Items, nil
 			}
 
-			statusResultCheckFunc := func(statuses []v1beta1.ServiceL2Status) error {
+			statusResultCheckFunc := func(statuses []metallbv1.ServiceL2Status) error {
 				if len(statuses) != 1 {
 					return fmt.Errorf("expect 1 status object, but got %d", len(statuses))
 				}
@@ -610,7 +606,7 @@ var _ = Describe("Layer2 Status Controller", func() {
 			otherNodeName := "other-node"
 
 			// Create a status that belongs to another node (simulating a node that went down)
-			otherNodeStatus := &v1beta1.ServiceL2Status{
+			otherNodeStatus := &metallbv1.ServiceL2Status{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "other-node-status",
 					Namespace: speakerNamespace,
@@ -633,9 +629,9 @@ var _ = Describe("Layer2 Status Controller", func() {
 			layer2StatusUpdateChan <- NewL2StatusEvent(testNamespace, testServiceName)
 
 			// Verify our node created its own status
-			var ourStatuses []v1beta1.ServiceL2Status
+			var ourStatuses []metallbv1.ServiceL2Status
 			Eventually(func() int {
-				statusList := v1beta1.ServiceL2StatusList{}
+				statusList := metallbv1.ServiceL2StatusList{}
 				err := k8sClient.List(ctx, &statusList,
 					client.MatchingLabels{
 						LabelServiceName:      testServiceName,
@@ -659,7 +655,7 @@ var _ = Describe("Layer2 Status Controller", func() {
 				err := k8sClient.Get(ctx, types.NamespacedName{
 					Name:      otherNodeStatus.Name,
 					Namespace: speakerNamespace,
-				}, &v1beta1.ServiceL2Status{})
+				}, &metallbv1.ServiceL2Status{})
 				return apierrors.IsNotFound(err)
 			}, 5*time.Second, 200*time.Millisecond).Should(BeTrue())
 
@@ -669,7 +665,7 @@ var _ = Describe("Layer2 Status Controller", func() {
 
 			// Verify our node's status is deleted
 			Eventually(func() int {
-				statusList := v1beta1.ServiceL2StatusList{}
+				statusList := metallbv1.ServiceL2StatusList{}
 				_ = k8sClient.List(ctx, &statusList,
 					client.MatchingLabels{
 						LabelServiceName:      testServiceName,
@@ -685,7 +681,7 @@ var _ = Describe("Layer2 Status Controller", func() {
 			otherNodeName := "other-node"
 
 			// Create a status that belongs to another node
-			otherNodeStatus := &v1beta1.ServiceL2Status{
+			otherNodeStatus := &metallbv1.ServiceL2Status{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "other-node-status",
 					Namespace: speakerNamespace,
@@ -707,7 +703,7 @@ var _ = Describe("Layer2 Status Controller", func() {
 
 			// Verify the other node's status is NOT deleted (we're not the leader)
 			Consistently(func() error {
-				updatedOtherStatus := &v1beta1.ServiceL2Status{}
+				updatedOtherStatus := &metallbv1.ServiceL2Status{}
 				err := k8sClient.Get(ctx, types.NamespacedName{
 					Name:      otherNodeStatus.Name,
 					Namespace: speakerNamespace,
@@ -732,8 +728,8 @@ var _ = Describe("BGP Status Controller", func() {
 	Context("SetupWithManager", func() {
 		It("Should Reconcile correctly", func() {
 			serviceKey := types.NamespacedName{Namespace: testNamespace, Name: testServiceName}.String()
-			getStatus := func() (*v1beta1.ServiceBGPStatus, error) {
-				list := v1beta1.ServiceBGPStatusList{}
+			getStatus := func() (*metallbv1.ServiceBGPStatus, error) {
+				list := metallbv1.ServiceBGPStatusList{}
 				err := k8sClient.List(context.TODO(), &list)
 				if err != nil {
 					return nil, err
@@ -840,7 +836,7 @@ var _ = Describe("BGP Status Controller", func() {
 			bgpAdvsMutex.Unlock()
 			bgpStatusReconcileChan <- NewBGPStatusEvent(testNamespace, testServiceName)
 			Eventually(func() error {
-				list := v1beta1.ServiceBGPStatusList{}
+				list := metallbv1.ServiceBGPStatusList{}
 				err := k8sClient.List(context.TODO(), &list)
 				if err != nil {
 					return err
@@ -854,7 +850,7 @@ var _ = Describe("BGP Status Controller", func() {
 			}, 5*time.Second, 200*time.Millisecond).ShouldNot(HaveOccurred())
 
 			Consistently(func() error {
-				list := v1beta1.ServiceBGPStatusList{}
+				list := metallbv1.ServiceBGPStatusList{}
 				err := k8sClient.List(context.TODO(), &list)
 				if err != nil {
 					return err
@@ -874,21 +870,21 @@ var _ = Describe("PoolStatus Controller", func() {
 	Context("SetupWithManager", func() {
 		testPoolName := "test"
 		It("Should Reconcile correctly", func() {
-			pool := v1beta1.IPAddressPool{
+			pool := metallbv1.IPAddressPool{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      testPoolName,
 					Namespace: testNamespace,
 				},
-				Spec: v1beta1.IPAddressPoolSpec{
+				Spec: metallbv1.IPAddressPoolSpec{
 					Addresses: []string{
 						"1.2.3.4/30",
 						"1000::4/126",
 					},
 				},
 			}
-			validateStatus := func(expected v1beta1.IPAddressPoolStatus) {
+			validateStatus := func(expected metallbv1.IPAddressPoolStatus) {
 				Eventually(func() error {
-					newPool := v1beta1.IPAddressPool{}
+					newPool := metallbv1.IPAddressPool{}
 					err := k8sClient.Get(context.TODO(), client.ObjectKey{Name: pool.Name, Namespace: testNamespace}, &newPool)
 					if err != nil {
 						return err
@@ -911,7 +907,7 @@ var _ = Describe("PoolStatus Controller", func() {
 			err := k8sClient.Create(ctx, &pool)
 			Expect(err).ToNot(HaveOccurred())
 
-			expectedStatus := v1beta1.IPAddressPoolStatus{
+			expectedStatus := metallbv1.IPAddressPoolStatus{
 				AvailableIPv4: 4,
 				AvailableIPv6: 4,
 				AssignedIPv4:  0,
@@ -930,7 +926,7 @@ var _ = Describe("PoolStatus Controller", func() {
 			poolCountersMutex.Unlock()
 			poolStatusReconcileChan <- NewPoolStatusEvent(testNamespace, testPoolName)
 
-			expectedStatus = v1beta1.IPAddressPoolStatus{
+			expectedStatus = metallbv1.IPAddressPoolStatus{
 				AvailableIPv4: 3,
 				AvailableIPv6: 3,
 				AssignedIPv4:  1,
@@ -941,7 +937,7 @@ var _ = Describe("PoolStatus Controller", func() {
 			// Manual updates should be reverted by the controller
 			err = k8sClient.Get(context.TODO(), client.ObjectKey{Name: pool.Name, Namespace: testNamespace}, &pool)
 			Expect(err).To(Not(HaveOccurred()))
-			pool.Status = v1beta1.IPAddressPoolStatus{
+			pool.Status = metallbv1.IPAddressPoolStatus{
 				AvailableIPv4: 0,
 				AvailableIPv6: 0,
 				AssignedIPv4:  1,

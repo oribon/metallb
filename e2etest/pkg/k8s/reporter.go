@@ -10,8 +10,7 @@ import (
 	frrk8sv1beta1 "github.com/metallb/frr-k8s/api/v1beta1"
 	"github.com/onsi/ginkgo/v2"
 	"github.com/openshift-kni/k8sreporter"
-	metallbv1beta1 "go.universe.tf/metallb/api/v1beta1"
-	metallbv1beta2 "go.universe.tf/metallb/api/v1beta2"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -19,11 +18,7 @@ import (
 func InitReporter(kubeconfig, path string, namespaces ...string) *k8sreporter.KubernetesReporter {
 	// When using custom crds, we need to add them to the scheme
 	addToScheme := func(s *runtime.Scheme) error {
-		err := metallbv1beta1.AddToScheme(s)
-		if err != nil {
-			return err
-		}
-		err = metallbv1beta2.AddToScheme(s)
+		err := metallbv1.AddToScheme(s)
 		if err != nil {
 			return err
 		}
@@ -54,16 +49,16 @@ func InitReporter(kubeconfig, path string, namespaces ...string) *k8sreporter.Ku
 
 	// The list of CRDs we want to dump
 	crds := []k8sreporter.CRData{
-		{Cr: &metallbv1beta1.IPAddressPoolList{}},
-		{Cr: &metallbv1beta2.BGPPeerList{}},
-		{Cr: &metallbv1beta1.L2AdvertisementList{}},
-		{Cr: &metallbv1beta1.BGPAdvertisementList{}},
-		{Cr: &metallbv1beta1.BFDProfileList{}},
-		{Cr: &metallbv1beta1.CommunityList{}},
+		{Cr: &metallbv1.IPAddressPoolList{}},
+		{Cr: &metallbv1.BGPPeerList{}},
+		{Cr: &metallbv1.L2AdvertisementList{}},
+		{Cr: &metallbv1.BGPAdvertisementList{}},
+		{Cr: &metallbv1.BFDProfileList{}},
+		{Cr: &metallbv1.CommunityList{}},
 		{Cr: &corev1.ServiceList{}},
 		{Cr: &frrk8sv1beta1.FRRConfigurationList{}},
 		{Cr: &frrk8sv1beta1.FRRNodeStateList{}},
-		{Cr: &metallbv1beta1.ServiceBGPStatusList{}},
+		{Cr: &metallbv1.ServiceBGPStatusList{}},
 	}
 
 	reporter, err := k8sreporter.New(kubeconfig, addToScheme, dumpNamespace, path, crds...)

@@ -7,13 +7,13 @@ import (
 
 	"github.com/go-kit/log"
 	"github.com/google/go-cmp/cmp"
-	"go.universe.tf/metallb/api/v1beta1"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestValidateL2Advertisement(t *testing.T) {
 	MetalLBNamespace = MetalLBTestNameSpace
-	l2Adv := v1beta1.L2Advertisement{
+	l2Adv := metallbv1.L2Advertisement{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-l2adv",
 			Namespace: MetalLBTestNameSpace,
@@ -23,16 +23,16 @@ func TestValidateL2Advertisement(t *testing.T) {
 	Logger = log.NewNopLogger()
 
 	toRestore := getExistingL2Advs
-	getExistingL2Advs = func() (*v1beta1.L2AdvertisementList, error) {
-		return &v1beta1.L2AdvertisementList{
-			Items: []v1beta1.L2Advertisement{
+	getExistingL2Advs = func() (*metallbv1.L2AdvertisementList, error) {
+		return &metallbv1.L2AdvertisementList{
+			Items: []metallbv1.L2Advertisement{
 				l2Adv,
 			},
 		}, nil
 	}
 	toRestoreIPAddressPools := getExistingIPAddressPools
-	getExistingIPAddressPools = func() (*v1beta1.IPAddressPoolList, error) {
-		return &v1beta1.IPAddressPoolList{}, nil
+	getExistingIPAddressPools = func() (*metallbv1.IPAddressPoolList, error) {
+		return &metallbv1.IPAddressPoolList{}, nil
 	}
 
 	defer func() {
@@ -42,22 +42,22 @@ func TestValidateL2Advertisement(t *testing.T) {
 
 	tests := []struct {
 		desc         string
-		l2Adv        *v1beta1.L2Advertisement
+		l2Adv        *metallbv1.L2Advertisement
 		isNew        bool
 		failValidate bool
-		expected     *v1beta1.L2AdvertisementList
+		expected     *metallbv1.L2AdvertisementList
 	}{
 		{
 			desc: "Second Adv",
-			l2Adv: &v1beta1.L2Advertisement{
+			l2Adv: &metallbv1.L2Advertisement{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test",
 					Namespace: MetalLBTestNameSpace,
 				},
 			},
 			isNew: true,
-			expected: &v1beta1.L2AdvertisementList{
-				Items: []v1beta1.L2Advertisement{
+			expected: &metallbv1.L2AdvertisementList{
+				Items: []metallbv1.L2Advertisement{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "test-l2adv",
@@ -75,15 +75,15 @@ func TestValidateL2Advertisement(t *testing.T) {
 		},
 		{
 			desc: "Same, update",
-			l2Adv: &v1beta1.L2Advertisement{
+			l2Adv: &metallbv1.L2Advertisement{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-l2adv",
 					Namespace: MetalLBTestNameSpace,
 				},
 			},
 			isNew: false,
-			expected: &v1beta1.L2AdvertisementList{
-				Items: []v1beta1.L2Advertisement{
+			expected: &metallbv1.L2AdvertisementList{
+				Items: []metallbv1.L2Advertisement{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "test-l2adv",
@@ -95,15 +95,15 @@ func TestValidateL2Advertisement(t *testing.T) {
 		},
 		{
 			desc: "Same, new",
-			l2Adv: &v1beta1.L2Advertisement{
+			l2Adv: &metallbv1.L2Advertisement{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-l2adv",
 					Namespace: MetalLBTestNameSpace,
 				},
 			},
 			isNew: true,
-			expected: &v1beta1.L2AdvertisementList{
-				Items: []v1beta1.L2Advertisement{
+			expected: &metallbv1.L2AdvertisementList{
+				Items: []metallbv1.L2Advertisement{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "test-l2adv",
@@ -116,7 +116,7 @@ func TestValidateL2Advertisement(t *testing.T) {
 		},
 		{
 			desc: "Validation must fail if created in different namespace",
-			l2Adv: &v1beta1.L2Advertisement{
+			l2Adv: &metallbv1.L2Advertisement{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-l2adv1",
 					Namespace: "default",

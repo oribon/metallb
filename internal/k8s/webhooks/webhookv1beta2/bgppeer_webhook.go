@@ -24,7 +24,7 @@ import (
 	"errors"
 
 	"github.com/go-kit/log/level"
-	"go.universe.tf/metallb/api/v1beta2"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 	v1 "k8s.io/api/admission/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -55,8 +55,8 @@ type BGPPeerValidator struct {
 
 // Handle handled incoming admission requests for BGPPeer objects.
 func (v *BGPPeerValidator) Handle(ctx context.Context, req admission.Request) admission.Response {
-	var peer v1beta2.BGPPeer
-	var oldPeer v1beta2.BGPPeer
+	var peer metallbv1.BGPPeer
+	var oldPeer metallbv1.BGPPeer
 	if req.Operation == v1.Delete {
 		if err := v.decoder.DecodeRaw(req.OldObject, &peer); err != nil {
 			return admission.Errored(http.StatusBadRequest, err)
@@ -95,12 +95,8 @@ func (v *BGPPeerValidator) Handle(ctx context.Context, req admission.Request) ad
 }
 
 // validatePeerCreate implements webhook.Validator so a webhook will be registered for BGPPeer.
-func validatePeerCreate(bgpPeer *v1beta2.BGPPeer) (string, error) {
+func validatePeerCreate(bgpPeer *metallbv1.BGPPeer) (string, error) {
 	level.Debug(Logger).Log("webhook", "bgppeer", "action", "create", "name", bgpPeer.Name, "namespace", bgpPeer.Namespace)
-
-	if bgpPeer.Spec.DisableMP {
-		return "disable mp is deprecated and has no effect since it's the default behavior now", nil
-	}
 
 	if bgpPeer.Namespace != MetalLBNamespace {
 		return "", fmt.Errorf("resource must be created in %s namespace", MetalLBNamespace)
@@ -120,7 +116,7 @@ func validatePeerCreate(bgpPeer *v1beta2.BGPPeer) (string, error) {
 }
 
 // validatePeerUpdate implements webhook.Validator so a webhook will be registered for BGPPeer.
-func validatePeerUpdate(bgpPeer *v1beta2.BGPPeer, _ *v1beta2.BGPPeer) error {
+func validatePeerUpdate(bgpPeer *metallbv1.BGPPeer, _ *metallbv1.BGPPeer) error {
 	level.Debug(Logger).Log("webhook", "bgppeer", "action", "update", "name", bgpPeer.Name, "namespace", bgpPeer.Namespace)
 
 	existingBGPPeers, err := GetExistingBGPPeers()
@@ -138,12 +134,12 @@ func validatePeerUpdate(bgpPeer *v1beta2.BGPPeer, _ *v1beta2.BGPPeer) error {
 }
 
 // validatePeerDelete implements webhook.Validator so a webhook will be registered for BGPPeer.
-func validatePeerDelete(bgpPeer *v1beta2.BGPPeer) error {
+func validatePeerDelete(bgpPeer *metallbv1.BGPPeer) error {
 	return nil
 }
 
-var GetExistingBGPPeers = func() (*v1beta2.BGPPeerList, error) {
-	existingBGPPeerslList := &v1beta2.BGPPeerList{}
+var GetExistingBGPPeers = func() (*metallbv1.BGPPeerList, error) {
+	existingBGPPeerslList := &metallbv1.BGPPeerList{}
 	err := WebhookClient.List(context.Background(), existingBGPPeerslList, &client.ListOptions{Namespace: MetalLBNamespace})
 	if err != nil {
 		return nil, errors.Join(err, errors.New("failed to get existing BGPPeer objects"))
@@ -151,7 +147,7 @@ var GetExistingBGPPeers = func() (*v1beta2.BGPPeerList, error) {
 	return existingBGPPeerslList, nil
 }
 
-func bgpPeerListWithUpdate(existing *v1beta2.BGPPeerList, toAdd *v1beta2.BGPPeer) *v1beta2.BGPPeerList {
+func bgpPeerListWithUpdate(existing *metallbv1.BGPPeerList, toAdd *metallbv1.BGPPeer) *metallbv1.BGPPeerList {
 	res := existing.DeepCopy()
 	for i, item := range res.Items { // We override the element with the fresh copy
 		if item.Name == toAdd.Name {

@@ -24,8 +24,7 @@ import (
 
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
-	metallbv1beta1 "go.universe.tf/metallb/api/v1beta1"
-	metallbv1beta2 "go.universe.tf/metallb/api/v1beta2"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 	"go.universe.tf/metallb/internal/config"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -75,37 +74,37 @@ var requestHandler = func(r *ConfigReconciler, ctx context.Context, req ctrl.Req
 
 	updates.Inc()
 
-	var ipAddressPools metallbv1beta1.IPAddressPoolList
+	var ipAddressPools metallbv1.IPAddressPoolList
 	if err := r.List(ctx, &ipAddressPools, client.InNamespace(r.Namespace)); err != nil {
 		level.Error(r.Logger).Log("controller", "ConfigReconciler", "error", "failed to get ipaddresspools", "error", err)
 		return ctrl.Result{}, err
 	}
 
-	var bgpPeers metallbv1beta2.BGPPeerList
+	var bgpPeers metallbv1.BGPPeerList
 	if err := r.List(ctx, &bgpPeers, client.InNamespace(r.Namespace)); err != nil {
 		level.Error(r.Logger).Log("controller", "ConfigReconciler", "message", "failed to get bgppeers", "error", err)
 		return ctrl.Result{}, err
 	}
 
-	var bfdProfiles metallbv1beta1.BFDProfileList
+	var bfdProfiles metallbv1.BFDProfileList
 	if err := r.List(ctx, &bfdProfiles, client.InNamespace(r.Namespace)); err != nil {
 		level.Error(r.Logger).Log("controller", "ConfigReconciler", "message", "failed to get bfdprofiles", "error", err)
 		return ctrl.Result{}, err
 	}
 
-	var l2Advertisements metallbv1beta1.L2AdvertisementList
+	var l2Advertisements metallbv1.L2AdvertisementList
 	if err := r.List(ctx, &l2Advertisements, client.InNamespace(r.Namespace)); err != nil {
 		level.Error(r.Logger).Log("controller", "ConfigReconciler", "message", "failed to get l2 advertisements", "error", err)
 		return ctrl.Result{}, err
 	}
 
-	var bgpAdvertisements metallbv1beta1.BGPAdvertisementList
+	var bgpAdvertisements metallbv1.BGPAdvertisementList
 	if err := r.List(ctx, &bgpAdvertisements, client.InNamespace(r.Namespace)); err != nil {
 		level.Error(r.Logger).Log("controller", "ConfigReconciler", "message", "failed to get bgp advertisements", "error", err)
 		return ctrl.Result{}, err
 	}
 
-	var communities metallbv1beta1.CommunityList
+	var communities metallbv1.CommunityList
 	if err := r.List(ctx, &communities, client.InNamespace(r.Namespace)); err != nil {
 		level.Error(r.Logger).Log("controller", "ConfigReconciler", "error", "failed to get communities", "error", err)
 		return ctrl.Result{}, err
@@ -205,13 +204,13 @@ func (r *ConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		},
 	}
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&metallbv1beta2.BGPPeer{}).
-		Watches(&metallbv1beta1.IPAddressPool{}, &handler.EnqueueRequestForObject{}).
+		For(&metallbv1.BGPPeer{}).
+		Watches(&metallbv1.IPAddressPool{}, &handler.EnqueueRequestForObject{}).
 		Watches(&corev1.Node{}, &handler.EnqueueRequestForObject{}).
-		Watches(&metallbv1beta1.BGPAdvertisement{}, &handler.EnqueueRequestForObject{}).
-		Watches(&metallbv1beta1.L2Advertisement{}, &handler.EnqueueRequestForObject{}).
-		Watches(&metallbv1beta1.BFDProfile{}, &handler.EnqueueRequestForObject{}).
-		Watches(&metallbv1beta1.Community{}, &handler.EnqueueRequestForObject{}).
+		Watches(&metallbv1.BGPAdvertisement{}, &handler.EnqueueRequestForObject{}).
+		Watches(&metallbv1.L2Advertisement{}, &handler.EnqueueRequestForObject{}).
+		Watches(&metallbv1.BFDProfile{}, &handler.EnqueueRequestForObject{}).
+		Watches(&metallbv1.Community{}, &handler.EnqueueRequestForObject{}).
 		Watches(&corev1.Secret{}, &handler.EnqueueRequestForObject{}).
 		Watches(&corev1.Namespace{}, &handler.EnqueueRequestForObject{}).
 		Watches(&corev1.ConfigMap{}, &handler.EnqueueRequestForObject{}).
@@ -299,16 +298,16 @@ func (r *ConfigReconciler) reportCondition(ctx context.Context, conditionErr err
 		condition.Message = conditionErr.Error()
 	}
 
-	configStatus := &metallbv1beta1.ConfigurationState{
+	configStatus := &metallbv1.ConfigurationState{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "metallb.io/v1beta1",
+			APIVersion: "metallb.io/v1",
 			Kind:       "ConfigurationState",
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      r.ConfigStateName,
 			Namespace: r.Namespace,
 		},
-		Status: metallbv1beta1.ConfigurationStateStatus{
+		Status: metallbv1.ConfigurationStateStatus{
 			Conditions: []metav1.Condition{condition},
 		},
 	}
