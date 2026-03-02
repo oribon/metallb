@@ -82,7 +82,7 @@ type IPAddressPoolStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// +kubebuilder:storageversion
+// +kubebuilder:deprecatedversion:warning="v1beta1 IPAddressPool is deprecated, use v1 instead"
 // +kubebuilder:printcolumn:name="Auto Assign",type=boolean,JSONPath=`.spec.autoAssign`
 // +kubebuilder:printcolumn:name="Avoid Buggy IPs",type=boolean,JSONPath=`.spec.avoidBuggyIPs`
 // +kubebuilder:printcolumn:name="Addresses",type=string,JSONPath=`.spec.addresses`

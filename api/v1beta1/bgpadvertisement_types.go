@@ -82,6 +82,7 @@ type BGPAdvertisementStatus struct {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+//+kubebuilder:deprecatedversion:warning="v1beta1 BGPAdvertisement is deprecated, use v1 instead"
 //+kubebuilder:printcolumn:name="IPAddressPools",type=string,JSONPath=`.spec.ipAddressPools`
 //+kubebuilder:printcolumn:name="IPAddressPool Selectors",type=string,JSONPath=`.spec.ipAddressPoolSelectors`
 //+kubebuilder:printcolumn:name="Peers",type=string,JSONPath=`.spec.peers`

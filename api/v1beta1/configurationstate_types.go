@@ -54,8 +54,8 @@ type ConfigurationStateStatus struct {
 }
 
 // +kubebuilder:object:root=true
-// +kubebuilder:storageversion
 // +kubebuilder:subresource:status
+// +kubebuilder:deprecatedversion:warning="v1beta1 ConfigurationState is deprecated, use v1 instead"
 // +kubebuilder:resource:scope=Namespaced
 // +kubebuilder:printcolumn:name="Result",type=string,JSONPath=`.status.result`
 // +kubebuilder:printcolumn:name="ErrorSummary",type=string,JSONPath=`.status.errorSummary`

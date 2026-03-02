@@ -74,6 +74,7 @@ type BFDProfileStatus struct {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+//+kubebuilder:deprecatedversion:warning="v1beta1 BFDProfile is deprecated, use v1 instead"
 //+kubebuilder:printcolumn:name="Passive Mode",type=boolean,JSONPath=`.spec.passiveMode`
 //+kubebuilder:printcolumn:name="Transmit Interval",type=integer,JSONPath=`.spec.transmitInterval`
 //+kubebuilder:printcolumn:name="Receive Interval",type=integer,JSONPath=`.spec.receiveInterval`

@@ -7,8 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"go.universe.tf/metallb/api/v1beta2"
-	corev1 "k8s.io/api/core/v1"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -16,9 +15,8 @@ const (
 	MetalLBTestNameSpace = "metallb-test-namespace"
 )
 
-func TestValidateBGPPeerConvertTo(t *testing.T) {
-	var err error
-	var resBGPPeer v1beta2.BGPPeer
+func TestBGPPeerConvertTo(t *testing.T) {
+	var resBGPPeer metallbv1.BGPPeer
 
 	convertBGPPeer := BGPPeer{
 		ObjectMeta: v1.ObjectMeta{
@@ -53,24 +51,23 @@ func TestValidateBGPPeerConvertTo(t *testing.T) {
 		},
 	}
 
-	expectedBGPPeer := v1beta2.BGPPeer{
+	expectedBGPPeer := metallbv1.BGPPeer{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      "peer1",
 			Namespace: MetalLBTestNameSpace,
 		},
-		Spec: v1beta2.BGPPeerSpec{
-			MyASN:          42,
-			ASN:            142,
-			Address:        "1.2.3.4",
-			Port:           1179,
-			HoldTime:       &v1.Duration{Duration: 180 * time.Second},
-			RouterID:       "10.20.30.40",
-			SrcAddress:     "10.20.30.40",
-			EBGPMultiHop:   true,
-			Password:       "nopass",
-			PasswordSecret: corev1.SecretReference{},
-			BFDProfile:     "default",
-			KeepaliveTime:  &v1.Duration{Duration: time.Second},
+		Spec: metallbv1.BGPPeerSpec{
+			MyASN:      42,
+			ASN:        142,
+			Address:    "1.2.3.4",
+			Port:       1179,
+			HoldTime:   &v1.Duration{Duration: 180 * time.Second},
+			RouterID:   "10.20.30.40",
+			SrcAddress: "10.20.30.40",
+			EBGPMultiHop: true,
+			Password:     "nopass",
+			BFDProfile:   "default",
+			KeepaliveTime: &v1.Duration{Duration: time.Second},
 			NodeSelectors: []v1.LabelSelector{
 				{
 					MatchLabels: map[string]string{
@@ -87,26 +84,25 @@ func TestValidateBGPPeerConvertTo(t *testing.T) {
 		},
 	}
 
-	err = convertBGPPeer.ConvertTo(&resBGPPeer)
+	err := convertBGPPeer.ConvertTo(&resBGPPeer)
 	if err != nil {
-		t.Fatalf("failed converting BGPPeer to v1beta2 version: %s", err)
+		t.Fatalf("failed converting BGPPeer to v1: %s", err)
 	}
 
 	if !reflect.DeepEqual(resBGPPeer, expectedBGPPeer) {
-		t.Fatalf("expected BGPPeer different than converted: %s", err)
+		t.Fatalf("expected BGPPeer different than converted")
 	}
 }
 
-func TestValidateBGPPeerConvertFrom(t *testing.T) {
-	var err error
+func TestBGPPeerConvertFrom(t *testing.T) {
 	var resBGPPeer BGPPeer
 
-	convertBGPPeer := v1beta2.BGPPeer{
+	convertBGPPeer := metallbv1.BGPPeer{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      "peer1",
 			Namespace: MetalLBTestNameSpace,
 		},
-		Spec: v1beta2.BGPPeerSpec{
+		Spec: metallbv1.BGPPeerSpec{
 			MyASN:        42,
 			ASN:          142,
 			Address:      "1.2.3.4",
@@ -116,9 +112,7 @@ func TestValidateBGPPeerConvertFrom(t *testing.T) {
 			SrcAddress:   "10.20.30.40",
 			EBGPMultiHop: true,
 			Password:     "nopass",
-			PasswordSecret: corev1.SecretReference{Name: "nosecret",
-				Namespace: "metallb-system"},
-			BFDProfile:    "default",
+			BFDProfile:   "default",
 			KeepaliveTime: &v1.Duration{Duration: time.Second},
 			NodeSelectors: []v1.LabelSelector{
 				{
@@ -169,12 +163,12 @@ func TestValidateBGPPeerConvertFrom(t *testing.T) {
 		},
 	}
 
-	err = resBGPPeer.ConvertFrom(&convertBGPPeer)
+	err := resBGPPeer.ConvertFrom(&convertBGPPeer)
 	if err != nil {
-		t.Fatalf("failed converting v1beta2 BGPPeer: %s", err)
+		t.Fatalf("failed converting v1 BGPPeer: %s", err)
 	}
 
 	if !reflect.DeepEqual(resBGPPeer, expectedBGPPeer) {
-		t.Fatalf("expected BGPPeer different than converted: %s", err)
+		t.Fatalf("expected BGPPeer different than converted")
 	}
 }

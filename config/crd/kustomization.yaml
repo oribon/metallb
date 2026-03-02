@@ -16,3 +16,35 @@ patches:
   target:
     kind: CustomResourceDefinition
     name: bgppeers.metallb.io
+- path: patches/crd-conversion-patch-bgpadvertisements.yaml
+  target:
+    kind: CustomResourceDefinition
+    name: bgpadvertisements.metallb.io
+- path: patches/crd-conversion-patch-l2advertisements.yaml
+  target:
+    kind: CustomResourceDefinition
+    name: l2advertisements.metallb.io
+- path: patches/crd-conversion-patch-ipaddresspools.yaml
+  target:
+    kind: CustomResourceDefinition
+    name: ipaddresspools.metallb.io
+- path: patches/crd-conversion-patch-bfdprofiles.yaml
+  target:
+    kind: CustomResourceDefinition
+    name: bfdprofiles.metallb.io
+- path: patches/crd-conversion-patch-communities.yaml
+  target:
+    kind: CustomResourceDefinition
+    name: communities.metallb.io
+- path: patches/crd-conversion-patch-configurationstates.yaml
+  target:
+    kind: CustomResourceDefinition
+    name: configurationstates.metallb.io
+- path: patches/crd-conversion-patch-servicebgpstatuses.yaml
+  target:
+    kind: CustomResourceDefinition
+    name: servicebgpstatuses.metallb.io
+- path: patches/crd-conversion-patch-servicel2statuses.yaml
+  target:
+    kind: CustomResourceDefinition
+    name: servicel2statuses.metallb.io

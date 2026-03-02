@@ -23,7 +23,39 @@ func enableCertRotation(notifyFinished chan struct{}, cfg *Config, mgr manager.M
 			Type: rotator.Validating,
 		},
 		{
-			Name: bgppeerConvertingWebhookCRD,
+			Name: "bgppeers.metallb.io",
+			Type: rotator.CRDConversion,
+		},
+		{
+			Name: "bgpadvertisements.metallb.io",
+			Type: rotator.CRDConversion,
+		},
+		{
+			Name: "l2advertisements.metallb.io",
+			Type: rotator.CRDConversion,
+		},
+		{
+			Name: "ipaddresspools.metallb.io",
+			Type: rotator.CRDConversion,
+		},
+		{
+			Name: "bfdprofiles.metallb.io",
+			Type: rotator.CRDConversion,
+		},
+		{
+			Name: "communities.metallb.io",
+			Type: rotator.CRDConversion,
+		},
+		{
+			Name: "configurationstates.metallb.io",
+			Type: rotator.CRDConversion,
+		},
+		{
+			Name: "servicebgpstatuses.metallb.io",
+			Type: rotator.CRDConversion,
+		},
+		{
+			Name: "servicel2statuses.metallb.io",
 			Type: rotator.CRDConversion,
 		},
 	}

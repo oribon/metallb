@@ -144,7 +144,7 @@ type BGPPeerStatus struct {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
-//+kubebuilder:storageversion
+//+kubebuilder:deprecatedversion:warning="v1beta2 BGPPeer is deprecated, use v1 instead"
 //+kubebuilder:printcolumn:name="Address",type=string,JSONPath=`.spec.peerAddress`
 //+kubebuilder:printcolumn:name="ASN",type=string,JSONPath=`.spec.peerASN`
 //+kubebuilder:printcolumn:name="BFD Profile",type=string,JSONPath=`.spec.bfdProfile`

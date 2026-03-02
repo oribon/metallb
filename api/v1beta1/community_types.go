@@ -41,6 +41,7 @@ type CommunityStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:deprecatedversion:warning="v1beta1 Community is deprecated, use v1 instead"
 
 // Community is a collection of aliases for communities.
 // Users can define named aliases to be used in the BGPPeer CRD.

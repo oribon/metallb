@@ -22,6 +22,7 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
+	metallbv1 "go.universe.tf/metallb/api/v1"
 	metallbv1beta1 "go.universe.tf/metallb/api/v1beta1"
 	metallbv1beta2 "go.universe.tf/metallb/api/v1beta2"
 
@@ -60,13 +61,13 @@ const (
 var (
 	scheme                      = runtime.NewScheme()
 	setupLog                    = ctrl.Log.WithName("setup")
-	validatingWebhookName       = "metallb-webhook-configuration"
-	bgppeerConvertingWebhookCRD = "bgppeers.metallb.io"
+	validatingWebhookName = "metallb-webhook-configuration"
 )
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
+	utilruntime.Must(metallbv1.AddToScheme(scheme))
 	utilruntime.Must(metallbv1beta1.AddToScheme(scheme))
 	utilruntime.Must(metallbv1beta2.AddToScheme(scheme))
 

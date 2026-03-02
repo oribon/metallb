@@ -53,6 +53,7 @@ type L2AdvertisementStatus struct {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+//+kubebuilder:deprecatedversion:warning="v1beta1 L2Advertisement is deprecated, use v1 instead"
 //+kubebuilder:printcolumn:name="IPAddressPools",type=string,JSONPath=`.spec.ipAddressPools`
 //+kubebuilder:printcolumn:name="IPAddressPool Selectors",type=string,JSONPath=`.spec.ipAddressPoolSelectors`
 //+kubebuilder:printcolumn:name="Interfaces",type=string,JSONPath=`.spec.interfaces`

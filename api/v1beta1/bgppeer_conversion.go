@@ -3,14 +3,16 @@
 package v1beta1
 
 import (
-	"go.universe.tf/metallb/api/v1beta2"
+	metallbv1 "go.universe.tf/metallb/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 )
 
-// ConvertTo converts this BGPPeer to the Hub version (v1beta2).
+// ConvertTo converts this BGPPeer to the Hub version (v1).
 func (src *BGPPeer) ConvertTo(dstRaw conversion.Hub) error {
-	dst := dstRaw.(*v1beta2.BGPPeer)
+	dst := dstRaw.(*metallbv1.BGPPeer)
+	dst.ObjectMeta = src.ObjectMeta
+
 	dst.Spec.ASN = src.Spec.ASN
 	dst.Spec.MyASN = src.Spec.MyASN
 	dst.Spec.Address = src.Spec.Address
@@ -23,13 +25,14 @@ func (src *BGPPeer) ConvertTo(dstRaw conversion.Hub) error {
 	dst.Spec.BFDProfile = src.Spec.BFDProfile
 	dst.Spec.EBGPMultiHop = src.Spec.EBGPMultiHop
 	dst.Spec.NodeSelectors = parseNodeSelectors(src.Spec.NodeSelectors)
-	dst.ObjectMeta = src.ObjectMeta
+
 	return nil
 }
 
-// ConvertFrom converts from the Hub version (v1beta2) to this version.
+// ConvertFrom converts from the Hub version (v1) to this version.
 func (dst *BGPPeer) ConvertFrom(srcRaw conversion.Hub) error {
-	src := srcRaw.(*v1beta2.BGPPeer)
+	src := srcRaw.(*metallbv1.BGPPeer)
+
 	var ht metav1.Duration
 	if src.Spec.HoldTime != nil {
 		ht = *src.Spec.HoldTime
@@ -38,6 +41,7 @@ func (dst *BGPPeer) ConvertFrom(srcRaw conversion.Hub) error {
 	if src.Spec.KeepaliveTime != nil {
 		ka = *src.Spec.KeepaliveTime
 	}
+
 	dst.ObjectMeta = src.ObjectMeta
 	dst.Spec.MyASN = src.Spec.MyASN
 	dst.Spec.ASN = src.Spec.ASN
@@ -51,6 +55,7 @@ func (dst *BGPPeer) ConvertFrom(srcRaw conversion.Hub) error {
 	dst.Spec.BFDProfile = src.Spec.BFDProfile
 	dst.Spec.EBGPMultiHop = src.Spec.EBGPMultiHop
 	dst.Spec.NodeSelectors = labelsToLegacySelector(src.Spec.NodeSelectors)
+
 	return nil
 }
 

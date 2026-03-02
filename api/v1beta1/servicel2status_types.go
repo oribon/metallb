@@ -45,7 +45,7 @@ type InterfaceInfo struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// +kubebuilder:storageversion
+// +kubebuilder:deprecatedversion:warning="v1beta1 ServiceL2Status is deprecated, use v1 instead"
 // +kubebuilder:printcolumn:name="Allocated Node",type=string,JSONPath=`.status.node`
 // +kubebuilder:printcolumn:name="Service Name",type=string,JSONPath=`.status.serviceName`
 // +kubebuilder:printcolumn:name="Service Namespace",type=string,JSONPath=`.status.serviceNamespace`
